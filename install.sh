@@ -15,7 +15,7 @@ fi
 jq --arg cwd "$REPO_DIR" \
    '.mcpServers.openrouter = {
       "command": "uv",
-      "args": ["run", "openrouter-mcp"],
+      "args": ["run", "mcp-openrouter"],
       "cwd": $cwd
     }' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
 

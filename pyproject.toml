@@ -27,6 +27,12 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.4.0",
+]
+
 [project.scripts]
 mcp-openrouter = "openrouter_mcp.server:main"
 

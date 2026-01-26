@@ -5,21 +5,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Install in development mode
-pip install -e .
+# Install dependencies (uses uv)
+uv sync
+
+# Install with dev dependencies
+uv sync --dev
 
 # Run the server (requires API key)
-OPENROUTER_API_KEY=your-key openrouter-mcp
+OPENROUTER_API_KEY=your-key uv run mcp-openrouter
 
 # Run tests (requires API key for integration tests)
-OPENROUTER_API_KEY=your-key pytest tests/
+OPENROUTER_API_KEY=your-key uv run pytest tests/
 
 # Run a single test
-OPENROUTER_API_KEY=your-key pytest tests/test_tools.py::TestChatTool::test_chat_returns_string -v
+OPENROUTER_API_KEY=your-key uv run pytest tests/test_tools.py::TestChatTool::test_chat_returns_string -v
 
 # Lint with ruff
-ruff check src/
-ruff format src/
+uv run ruff check src/
+uv run ruff format src/
 ```
 
 ## Architecture
@@ -32,7 +35,7 @@ This is an MCP (Model Context Protocol) server built with FastMCP that exposes O
 
 **Flow:** MCP tools in `server.py` → `get_client()` → `OpenRouterClient` methods → OpenRouter API
 
-**Entry point:** `openrouter-mcp` CLI command runs `server:main()` which starts the FastMCP server.
+**Entry point:** `mcp-openrouter` CLI command runs `server:main()` which starts the FastMCP server.
 
 ## Project Guidelines
 

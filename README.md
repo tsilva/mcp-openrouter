@@ -3,8 +3,8 @@
 
   # mcp-openrouter
 
-  [![PyPI](https://img.shields.io/pypi/v/openrouter-mcp)](https://pypi.org/project/openrouter-mcp/)
-  [![Python](https://img.shields.io/pypi/pyversions/openrouter-mcp)](https://pypi.org/project/openrouter-mcp/)
+  [![PyPI](https://img.shields.io/pypi/v/mcp-openrouter)](https://pypi.org/project/mcp-openrouter/)
+  [![Python](https://img.shields.io/pypi/pyversions/mcp-openrouter)](https://pypi.org/project/mcp-openrouter/)
   [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
   **🚀 Access 300+ AI models through a single MCP server — text, images, and model discovery at your fingertips**
@@ -28,13 +28,13 @@ mcp-openrouter is an MCP (Model Context Protocol) server that provides seamless 
 ### Installation
 
 ```bash
-pip install openrouter-mcp
+uv pip install mcp-openrouter
 ```
 
-Or with uvx:
+Or run directly with uvx:
 
 ```bash
-uvx openrouter-mcp
+uvx mcp-openrouter
 ```
 
 ### Configuration
@@ -77,7 +77,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
   "mcpServers": {
     "openrouter": {
       "command": "uv",
-      "args": ["run", "openrouter-mcp"],
+      "args": ["run", "mcp-openrouter"],
       "cwd": "/path/to/mcp-openrouter"
     }
   }
@@ -174,11 +174,18 @@ Search for models by name or slug.
 git clone https://github.com/tsilva/mcp-openrouter.git
 cd mcp-openrouter
 
-# Install in development mode
-pip install -e .
+# Install dependencies
+uv sync --dev
 
 # Run the server
-OPENROUTER_API_KEY=your-key openrouter-mcp
+OPENROUTER_API_KEY=your-key uv run mcp-openrouter
+
+# Run tests
+OPENROUTER_API_KEY=your-key uv run pytest tests/
+
+# Lint
+uv run ruff check src/
+uv run ruff format src/
 ```
 
 ## Contributing
