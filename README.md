@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="mcp-openrouter" width="512"/>
+  <img src="logo.png" alt="mcp-openrouter" width="512">
 
   # mcp-openrouter
 
@@ -39,19 +39,55 @@ uvx openrouter-mcp
 
 ### Configuration
 
+#### Claude Code
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/tsilva/mcp-openrouter.git
+   cd mcp-openrouter
+   ```
+
+2. Create your `.env` file with your API key:
+   ```bash
+   cp .env.example .env
+   # Edit .env and add your key from https://openrouter.ai/keys
+   ```
+
+3. Run the install script:
+   ```bash
+   ./install.sh
+   ```
+
+4. Restart Claude Code
+
+**Changing your API key:** Just edit `.env` and restart Claude Code. No reinstall needed.
+
+To uninstall:
+
+```bash
+./uninstall.sh
+```
+
+#### Claude Desktop
+
 Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "openrouter": {
-      "command": "openrouter-mcp",
-      "env": {
-        "OPENROUTER_API_KEY": "sk-or-v1-your-key-here"
-      }
+      "command": "uv",
+      "args": ["run", "openrouter-mcp"],
+      "cwd": "/path/to/mcp-openrouter"
     }
   }
 }
+```
+
+Then create a `.env` file in the `mcp-openrouter` directory with your API key:
+
+```bash
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
 ```
 
 Get your API key at [openrouter.ai/keys](https://openrouter.ai/keys).
