@@ -16,7 +16,7 @@ class TestModelDefaults:
 
     def test_chat_uses_default_model(self, monkeypatch):
         """Chat should use default model when none specified."""
-        from openrouter_mcp.server import chat
+        from mcp_openrouter.server import chat
 
         monkeypatch.setenv("DEFAULT_TEXT_MODEL", "openai/gpt-4o-mini")
 
@@ -26,7 +26,7 @@ class TestModelDefaults:
 
     def test_chat_raises_error_without_model_or_default(self, monkeypatch):
         """Chat should raise error when no model and no default configured."""
-        from openrouter_mcp.server import chat
+        from mcp_openrouter.server import chat
 
         monkeypatch.delenv("DEFAULT_TEXT_MODEL", raising=False)
 
@@ -37,7 +37,7 @@ class TestModelDefaults:
 
     def test_chat_explicit_model_overrides_default(self, monkeypatch):
         """Explicit model parameter should override the default."""
-        from openrouter_mcp.server import chat
+        from mcp_openrouter.server import chat
 
         # Set a default that we won't use
         monkeypatch.setenv("DEFAULT_TEXT_MODEL", "some/other-model")
@@ -53,7 +53,7 @@ class TestModelDefaults:
 
     def test_generate_image_raises_error_without_model_or_default(self, monkeypatch):
         """generate_image should raise error when no model and no default configured."""
-        from openrouter_mcp.server import generate_image
+        from mcp_openrouter.server import generate_image
 
         monkeypatch.delenv("DEFAULT_IMAGE_MODEL", raising=False)
 
@@ -68,7 +68,7 @@ class TestChatTool:
 
     def test_chat_returns_string(self):
         """Chat should return a string response."""
-        from openrouter_mcp.server import chat
+        from mcp_openrouter.server import chat
 
         # Use a fast, cheap model for testing
         result = chat(
@@ -85,7 +85,7 @@ class TestListModelsTool:
 
     def test_list_models_returns_list(self):
         """list_models should return a list of model dicts."""
-        from openrouter_mcp.server import list_models
+        from mcp_openrouter.server import list_models
 
         result = list_models()
         assert isinstance(result, list)
@@ -95,7 +95,7 @@ class TestListModelsTool:
 
     def test_list_models_with_capability_filter(self):
         """list_models should filter by capability."""
-        from openrouter_mcp.server import list_models
+        from mcp_openrouter.server import list_models
 
         result = list_models(capability="image_gen")
         assert isinstance(result, list)
@@ -109,7 +109,7 @@ class TestFindModelsTool:
 
     def test_find_models_returns_matches(self):
         """find_models should return matching models."""
-        from openrouter_mcp.server import find_models
+        from mcp_openrouter.server import find_models
 
         result = find_models("claude")
         assert isinstance(result, list)
@@ -122,7 +122,7 @@ class TestFindModelsTool:
 
     def test_find_models_limits_results(self):
         """find_models should return at most 20 results."""
-        from openrouter_mcp.server import find_models
+        from mcp_openrouter.server import find_models
 
         result = find_models("a")  # Very broad search
         assert len(result) <= 20

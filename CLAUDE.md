@@ -47,9 +47,9 @@ When default models are configured, the `model` parameter becomes optional in to
 This is an MCP (Model Context Protocol) server built with FastMCP that exposes OpenRouter's API as tools.
 
 **Key components:**
-- `src/openrouter_mcp/server.py` - MCP server with tool definitions (`chat`, `generate_image`, `list_models`, `find_models`)
-- `src/openrouter_mcp/client.py` - `OpenRouterClient` class handling API requests with retry logic
-- `src/openrouter_mcp/config.py` - Configuration management for default models
+- `src/mcp_openrouter/server.py` - MCP server with tool definitions (`chat`, `generate_image`, `list_models`, `find_models`)
+- `src/mcp_openrouter/client.py` - `OpenRouterClient` class handling API requests with retry logic
+- `src/mcp_openrouter/config.py` - Configuration management for default models
 
 **Flow:** MCP tools in `server.py` → `get_client()` → `OpenRouterClient` methods → OpenRouter API
 

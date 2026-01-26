@@ -15,8 +15,8 @@ from fastmcp import FastMCP
 _package_dir = Path(__file__).parent.parent.parent
 load_dotenv(_package_dir / ".env")
 
-from openrouter_mcp.client import OpenRouterClient
-from openrouter_mcp.config import get_default_model
+from mcp_openrouter.client import OpenRouterClient
+from mcp_openrouter.config import get_default_model
 
 # Initialize FastMCP server
 mcp = FastMCP(

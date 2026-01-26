@@ -34,7 +34,7 @@ dev = [
 ]
 
 [project.scripts]
-mcp-openrouter = "openrouter_mcp.server:main"
+mcp-openrouter = "mcp_openrouter.server:main"
 
 [project.urls]
 Homepage = "https://github.com/tsilva/mcp-openrouter"
@@ -42,7 +42,7 @@ Repository = "https://github.com/tsilva/mcp-openrouter"
 Issues = "https://github.com/tsilva/mcp-openrouter/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/openrouter_mcp"]
+packages = ["src/mcp_openrouter"]
 
 [tool.ruff]
 line-length = 88
