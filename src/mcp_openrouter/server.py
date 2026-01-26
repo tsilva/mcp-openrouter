@@ -4,12 +4,14 @@ Exposes OpenRouter API capabilities as MCP tools for text completion,
 image generation, and model discovery.
 """
 
+import base64
 import os
 from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
 from fastmcp import FastMCP
+from fastmcp.utilities.types import Image
 
 # Load .env from the package directory (where the repo is cloned)
 _package_dir = Path(__file__).parent.parent.parent
@@ -90,19 +92,17 @@ def chat(
 @mcp.tool()
 def generate_image(
     prompt: str,
-    output_path: str,
     model: Optional[str] = None,
     aspect_ratio: str = "1:1",
     size: str = "1K",
     background: Optional[str] = None,
     quality: Optional[str] = None,
     output_format: Optional[str] = None,
-) -> str:
+) -> Image:
     """Generate an image using an OpenRouter image generation model.
 
     Args:
         prompt: Image description - be specific about style, colors, composition
-        output_path: Absolute path to save the image (e.g., "/path/to/image.png")
         model: Image model (e.g., "google/gemini-3-pro-image-preview").
             If not specified, uses DEFAULT_IMAGE_MODEL environment variable.
         aspect_ratio: Aspect ratio - 1:1, 16:9, 9:16, 4:3, 3:4, or 21:9
@@ -112,7 +112,7 @@ def generate_image(
         output_format: Output format (e.g., "png", "webp", "jpeg")
 
     Returns:
-        Success message with the saved file path
+        The generated image data
     """
     resolved_model = model or get_default_model("image")
     if not resolved_model:
@@ -126,7 +126,6 @@ def generate_image(
     images = client.generate_image(
         resolved_model,
         prompt,
-        output_path,
         aspect_ratio=aspect_ratio,
         size=size,
         background=background,
@@ -135,9 +134,17 @@ def generate_image(
     )
 
     if images:
-        return f"Generated image saved to {output_path}"
+        # Extract base64 data from the response
+        data_url = images[0]["image_url"]["url"]
+        base64_data = data_url.split(",")[1]
+
+        # Determine format from data URL (e.g., "data:image/png;base64,...")
+        mime_type = data_url.split(";")[0].split(":")[1]
+        format = mime_type.split("/")[1]  # "png", "webp", etc.
+
+        return Image(data=base64.b64decode(base64_data), format=format)
     else:
-        return "No image was generated. Try adjusting the prompt or model."
+        raise ValueError("No image was generated. Try adjusting the prompt or model.")
 
 
 @mcp.tool()

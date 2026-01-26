@@ -58,7 +58,7 @@ class TestModelDefaults:
         monkeypatch.delenv("DEFAULT_IMAGE_MODEL", raising=False)
 
         with pytest.raises(ValueError) as exc_info:
-            generate_image(prompt="A test image", output_path="/tmp/test.png")
+            generate_image(prompt="A test image")
 
         assert "DEFAULT_IMAGE_MODEL" in str(exc_info.value)
 
