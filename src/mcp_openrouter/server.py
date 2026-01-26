@@ -133,18 +133,18 @@ def generate_image(
         output_format=output_format,
     )
 
-    if images:
-        # Extract base64 data from the response
-        data_url = images[0]["image_url"]["url"]
-        base64_data = data_url.split(",")[1]
-
-        # Determine format from data URL (e.g., "data:image/png;base64,...")
-        mime_type = data_url.split(";")[0].split(":")[1]
-        format = mime_type.split("/")[1]  # "png", "webp", etc.
-
-        return Image(data=base64.b64decode(base64_data), format=format)
-    else:
+    if not images:
         raise ValueError("No image was generated. Try adjusting the prompt or model.")
+
+    # Extract base64 data from the response
+    data_url = images[0]["image_url"]["url"]
+    base64_data = data_url.split(",")[1]
+
+    # Determine format from data URL (e.g., "data:image/png;base64,...")
+    mime_type = data_url.split(";")[0].split(":")[1]
+    img_format = mime_type.split("/")[1]  # "png", "webp", etc.
+
+    return Image(data=base64.b64decode(base64_data), format=img_format)
 
 
 @mcp.tool()
