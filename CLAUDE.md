@@ -11,6 +11,9 @@ uv sync
 # Install with dev dependencies
 uv sync --dev
 
+# Install MCP server for Claude Code
+claude mcp add openrouter --scope user -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
+
 # Run the server (requires API key)
 OPENROUTER_API_KEY=your-key uv run mcp-openrouter
 

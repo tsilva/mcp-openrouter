@@ -53,19 +53,23 @@ uvx mcp-openrouter
    # Edit .env and add your key from https://openrouter.ai/keys
    ```
 
-3. Run the install script:
+3. Add the MCP server:
    ```bash
-   ./install.sh
+   claude mcp add openrouter --scope user -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
    ```
 
 4. Restart Claude Code
 
-**Changing your API key:** Just edit `.env` and restart Claude Code. No reinstall needed.
+5. Verify installation:
+   ```bash
+   claude mcp list
+   # Should show: openrouter: ... - ✓ Connected
+   ```
 
 To uninstall:
 
 ```bash
-./uninstall.sh
+claude mcp remove openrouter --scope user
 ```
 
 #### Claude Desktop
