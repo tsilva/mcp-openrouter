@@ -1,16 +1,66 @@
 """Tests for OpenRouter MCP tools."""
 
 import os
-from unittest.mock import MagicMock, patch
 
 import pytest
-
 
 # Skip all tests if no API key is set
 pytestmark = pytest.mark.skipif(
     not os.environ.get("OPENROUTER_API_KEY"),
     reason="OPENROUTER_API_KEY not set",
 )
+
+
+class TestModelDefaults:
+    """Tests for configurable model defaults."""
+
+    def test_chat_uses_default_model(self, monkeypatch):
+        """Chat should use default model when none specified."""
+        from openrouter_mcp.server import chat
+
+        monkeypatch.setenv("DEFAULT_TEXT_MODEL", "openai/gpt-4o-mini")
+
+        result = chat(prompt="Say 'test' and nothing else.", max_tokens=10)
+        assert isinstance(result, str)
+        assert len(result) > 0
+
+    def test_chat_raises_error_without_model_or_default(self, monkeypatch):
+        """Chat should raise error when no model and no default configured."""
+        from openrouter_mcp.server import chat
+
+        monkeypatch.delenv("DEFAULT_TEXT_MODEL", raising=False)
+
+        with pytest.raises(ValueError) as exc_info:
+            chat(prompt="Test")
+
+        assert "DEFAULT_TEXT_MODEL" in str(exc_info.value)
+
+    def test_chat_explicit_model_overrides_default(self, monkeypatch):
+        """Explicit model parameter should override the default."""
+        from openrouter_mcp.server import chat
+
+        # Set a default that we won't use
+        monkeypatch.setenv("DEFAULT_TEXT_MODEL", "some/other-model")
+
+        # Explicitly specify a different model
+        result = chat(
+            model="openai/gpt-4o-mini",
+            prompt="Say 'test' and nothing else.",
+            max_tokens=10,
+        )
+        assert isinstance(result, str)
+        assert len(result) > 0
+
+    def test_generate_image_raises_error_without_model_or_default(self, monkeypatch):
+        """generate_image should raise error when no model and no default configured."""
+        from openrouter_mcp.server import generate_image
+
+        monkeypatch.delenv("DEFAULT_IMAGE_MODEL", raising=False)
+
+        with pytest.raises(ValueError) as exc_info:
+            generate_image(prompt="A test image", output_path="/tmp/test.png")
+
+        assert "DEFAULT_IMAGE_MODEL" in str(exc_info.value)
 
 
 class TestChatTool:
@@ -67,8 +117,7 @@ class TestFindModelsTool:
         # All results should contain "claude" in slug or name
         for model in result:
             assert (
-                "claude" in model["slug"].lower()
-                or "claude" in model["name"].lower()
+                "claude" in model["slug"].lower() or "claude" in model["name"].lower()
             )
 
     def test_find_models_limits_results(self):

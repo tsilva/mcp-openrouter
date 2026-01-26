@@ -96,6 +96,20 @@ OPENROUTER_API_KEY=sk-or-v1-your-key-here
 
 Get your API key at [openrouter.ai/keys](https://openrouter.ai/keys).
 
+### Default Models
+
+Configure default models for different use cases. When set, the `model` parameter becomes optional in tool calls:
+
+```bash
+# Add to your .env file
+DEFAULT_TEXT_MODEL=anthropic/claude-sonnet-4
+DEFAULT_IMAGE_MODEL=google/gemini-3-pro-image-preview
+DEFAULT_CODE_MODEL=anthropic/claude-sonnet-4
+DEFAULT_VISION_MODEL=anthropic/claude-sonnet-4
+```
+
+These are included in `.env.example` — copy it to `.env` and adjust as needed.
+
 ## Tools
 
 | Tool | Description |
@@ -135,12 +149,14 @@ Send a chat completion request to any OpenRouter model.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `model` | string | Yes | Model identifier (e.g., `anthropic/claude-sonnet-4`) |
 | `prompt` | string | Yes | User message to send |
+| `model` | string | No* | Model identifier (e.g., `anthropic/claude-sonnet-4`) |
 | `system` | string | No | System prompt for context |
 | `max_tokens` | int | No | Maximum tokens in response |
 | `temperature` | float | No | Sampling temperature (0-2) |
 | `json_mode` | bool | No | Request JSON-formatted response |
+
+*Required unless `DEFAULT_TEXT_MODEL` is set.
 
 ### generate_image
 
@@ -148,12 +164,14 @@ Generate an image using an OpenRouter image model.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `model` | string | Yes | Image model (e.g., `google/gemini-3-pro-image-preview`) |
 | `prompt` | string | Yes | Image description |
 | `output_path` | string | Yes | Absolute path to save the image |
+| `model` | string | No* | Image model (e.g., `google/gemini-3-pro-image-preview`) |
 | `aspect_ratio` | string | No | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `21:9` |
 | `size` | string | No | `1K`, `2K`, or `4K` |
 | `background` | string | No | Background setting (e.g., `transparent`) |
+
+*Required unless `DEFAULT_IMAGE_MODEL` is set.
 
 ### list_models
 
@@ -191,6 +209,18 @@ OPENROUTER_API_KEY=your-key uv run pytest tests/
 uv run ruff check src/
 uv run ruff format src/
 ```
+
+### Applying Code Changes
+
+When you modify the MCP server code, Claude won't automatically pick up the changes. The server runs as a long-lived process that persists across tool calls within a session.
+
+**To apply your changes:**
+
+1. **Start a new Claude Code session** — Close your current terminal/conversation and open a new one. The MCP server process restarts when a new session begins.
+
+2. **Or use the `/mcp` command** — Check server status and restart options within Claude Code.
+
+**Why this works:** The installation uses `uv run --directory /path/to/mcp-openrouter` which executes code directly from your source directory. There's no separate "install" step needed — just restart the server process to load your changes.
 
 ## Contributing
 

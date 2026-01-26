@@ -28,6 +28,20 @@ uv run ruff check src/
 uv run ruff format src/
 ```
 
+## Configuration
+
+Environment variables (set in `.env` file or shell):
+
+| Variable | Description |
+|----------|-------------|
+| `OPENROUTER_API_KEY` | **Required.** Your OpenRouter API key |
+| `DEFAULT_TEXT_MODEL` | Default model for `chat` tool (e.g., `anthropic/claude-sonnet-4`) |
+| `DEFAULT_IMAGE_MODEL` | Default model for `generate_image` tool (e.g., `google/gemini-3-pro-image-preview`) |
+| `DEFAULT_CODE_MODEL` | Default model for code-related tasks |
+| `DEFAULT_VISION_MODEL` | Default model for vision tasks |
+
+When default models are configured, the `model` parameter becomes optional in tool calls.
+
 ## Architecture
 
 This is an MCP (Model Context Protocol) server built with FastMCP that exposes OpenRouter's API as tools.
@@ -35,6 +49,7 @@ This is an MCP (Model Context Protocol) server built with FastMCP that exposes O
 **Key components:**
 - `src/openrouter_mcp/server.py` - MCP server with tool definitions (`chat`, `generate_image`, `list_models`, `find_models`)
 - `src/openrouter_mcp/client.py` - `OpenRouterClient` class handling API requests with retry logic
+- `src/openrouter_mcp/config.py` - Configuration management for default models
 
 **Flow:** MCP tools in `server.py` → `get_client()` → `OpenRouterClient` methods → OpenRouter API
 

@@ -22,7 +22,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-    "fastmcp>=2.0.0",
+    "fastmcp>=2.0.0,<3",
     "requests>=2.28.0",
     "python-dotenv>=1.0.0",
 ]

@@ -33,11 +33,7 @@ class OpenRouterClient:
         self, method: str, endpoint: str, payload: dict = None, max_retries: int = 3
     ):
         """Make API request with retry logic."""
-        url = (
-            endpoint
-            if endpoint.startswith("http")
-            else f"{self.BASE_URL}/{endpoint}"
-        )
+        url = endpoint if endpoint.startswith("http") else f"{self.BASE_URL}/{endpoint}"
 
         for attempt in range(max_retries):
             try:
@@ -100,9 +96,7 @@ class OpenRouterClient:
         payload.update(kwargs)
         return self._request("POST", "chat/completions", payload)
 
-    def chat_simple(
-        self, model: str, prompt: str, system: str = None, **kwargs
-    ) -> str:
+    def chat_simple(self, model: str, prompt: str, system: str = None, **kwargs) -> str:
         """Simple chat - returns just the response text.
 
         Args:
@@ -201,9 +195,7 @@ class OpenRouterClient:
 
         if capability:
             if capability == "vision":
-                models = [
-                    m for m in models if "image" in m.get("input_modalities", [])
-                ]
+                models = [m for m in models if "image" in m.get("input_modalities", [])]
             elif capability == "image_gen":
                 models = [
                     m for m in models if "image" in m.get("output_modalities", [])
