@@ -5,9 +5,15 @@ image generation, and model discovery.
 """
 
 import os
+from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
 from fastmcp import FastMCP
+
+# Load .env from the package directory (where the repo is cloned)
+_package_dir = Path(__file__).parent.parent.parent
+load_dotenv(_package_dir / ".env")
 
 from openrouter_mcp.client import OpenRouterClient
 

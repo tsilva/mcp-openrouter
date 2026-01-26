@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "openrouter-mcp"
+name = "mcp-openrouter"
 version = "1.0.0"
 description = "MCP server providing access to 300+ AI models via OpenRouter"
 readme = "README.md"
@@ -24,10 +24,11 @@ classifiers = [
 dependencies = [
     "fastmcp>=2.0.0",
     "requests>=2.28.0",
+    "python-dotenv>=1.0.0",
 ]
 
 [project.scripts]
-openrouter-mcp = "openrouter_mcp.server:main"
+mcp-openrouter = "openrouter_mcp.server:main"
 
 [project.urls]
 Homepage = "https://github.com/tsilva/mcp-openrouter"
