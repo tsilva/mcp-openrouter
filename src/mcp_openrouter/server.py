@@ -98,6 +98,7 @@ def generate_image(
     background: Optional[str] = None,
     quality: Optional[str] = None,
     output_format: Optional[str] = None,
+    output_path: Optional[str] = None,
 ) -> Image:
     """Generate an image using an OpenRouter image generation model.
 
@@ -110,6 +111,8 @@ def generate_image(
         background: Background setting (e.g., "transparent" for PNG/WebP)
         quality: Quality setting (e.g., "high", "medium", "low")
         output_format: Output format (e.g., "png", "webp", "jpeg")
+        output_path: Optional absolute file path to save the image.
+            Must be an absolute path if provided (e.g., "/Users/name/output.png").
 
     Returns:
         The generated image data
@@ -144,7 +147,20 @@ def generate_image(
     mime_type = data_url.split(";")[0].split(":")[1]
     img_format = mime_type.split("/")[1]  # "png", "webp", etc.
 
-    return Image(data=base64.b64decode(base64_data), format=img_format)
+    # Decode image data
+    image_data = base64.b64decode(base64_data)
+
+    # Save to file if output_path is provided
+    if output_path:
+        path = Path(output_path)
+        if not path.is_absolute():
+            raise ValueError(
+                f"output_path must be an absolute path, got: {output_path}"
+            )
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(image_data)
+
+    return Image(data=image_data, format=img_format)
 
 
 @mcp.tool()
