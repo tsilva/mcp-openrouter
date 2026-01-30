@@ -13,12 +13,12 @@ from dotenv import load_dotenv
 from fastmcp import FastMCP
 from fastmcp.utilities.types import Image
 
+from mcp_openrouter.client import OpenRouterClient
+from mcp_openrouter.config import get_default_model
+
 # Load .env from the package directory (where the repo is cloned)
 _package_dir = Path(__file__).parent.parent.parent
 load_dotenv(_package_dir / ".env")
-
-from mcp_openrouter.client import OpenRouterClient
-from mcp_openrouter.config import get_default_model
 
 # Initialize FastMCP server
 mcp = FastMCP(

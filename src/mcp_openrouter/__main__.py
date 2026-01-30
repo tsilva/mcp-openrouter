@@ -1,6 +1,6 @@
-"""Entry point for python -m openrouter_mcp."""
+"""Entry point for python -m mcp_openrouter."""
 
-from openrouter_mcp.server import main
+from mcp_openrouter.server import main
 
 if __name__ == "__main__":
     main()

@@ -3,7 +3,6 @@
 
   # mcp-openrouter
 
-  [![PyPI](https://img.shields.io/pypi/v/mcp-openrouter)](https://pypi.org/project/mcp-openrouter/)
   [![Python](https://img.shields.io/pypi/pyversions/mcp-openrouter)](https://pypi.org/project/mcp-openrouter/)
   [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
