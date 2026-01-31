@@ -48,27 +48,56 @@ def get_client() -> OpenRouterClient:
 
 @mcp.tool()
 def chat(
-    prompt: str,
+    prompt: Optional[str] = None,
+    messages: Optional[list[dict]] = None,
     model: Optional[str] = None,
     system: Optional[str] = None,
     max_tokens: Optional[int] = None,
     temperature: Optional[float] = None,
+    top_p: Optional[float] = None,
+    top_k: Optional[int] = None,
+    frequency_penalty: Optional[float] = None,
+    presence_penalty: Optional[float] = None,
+    seed: Optional[int] = None,
+    stop: Optional[list[str]] = None,
     json_mode: bool = False,
+    response_format: Optional[dict] = None,
+    reasoning_effort: Optional[str] = None,
+    provider: Optional[dict] = None,
+    assistant_prefill: Optional[str] = None,
 ) -> str:
     """Send a chat completion request to any OpenRouter model.
 
     Args:
-        prompt: User message to send
+        prompt: User message to send (provide either prompt or messages, not both)
+        messages: Multi-turn conversation as a list of {role, content} dicts
+            (provide either prompt or messages, not both)
         model: Model identifier (e.g., "anthropic/claude-sonnet-4", "openai/gpt-4o").
             If not specified, uses DEFAULT_TEXT_MODEL environment variable.
         system: Optional system prompt to set context
         max_tokens: Maximum tokens in response (model default if not specified)
         temperature: Sampling temperature 0-2 (model default if not specified)
-        json_mode: If True, request JSON-formatted response
+        top_p: Nucleus sampling threshold 0-1
+        top_k: Top-k sampling (number of top tokens to consider)
+        frequency_penalty: Penalize repeated tokens (-2 to 2)
+        presence_penalty: Penalize tokens already present (-2 to 2)
+        seed: Random seed for deterministic outputs
+        stop: List of stop sequences
+        json_mode: If True, request JSON-formatted response (backward compat)
+        response_format: Response format spec, e.g. {"type": "json_schema", ...}.
+            Supersedes json_mode if both provided.
+        reasoning_effort: Reasoning effort level: "minimal", "medium", or "high"
+        provider: Provider routing control (e.g., {"order": ["Anthropic", "Google"]})
+        assistant_prefill: Text to prefill the assistant response with
 
     Returns:
         The model's response text
     """
+    if prompt and messages:
+        raise ValueError("Provide either 'prompt' or 'messages', not both.")
+    if not prompt and not messages:
+        raise ValueError("Either 'prompt' or 'messages' must be provided.")
+
     resolved_model = model or get_default_model("text")
     if not resolved_model:
         raise ValueError(
@@ -78,15 +107,51 @@ def chat(
 
     client = get_client()
 
+    # Build messages list
+    msg_list = []
+    if messages:
+        if system:
+            msg_list.append({"role": "system", "content": system})
+        msg_list.extend(messages)
+    else:
+        if system:
+            msg_list.append({"role": "system", "content": system})
+        msg_list.append({"role": "user", "content": prompt})
+
+    if assistant_prefill:
+        msg_list.append({"role": "assistant", "content": assistant_prefill})
+
+    # Build kwargs
     kwargs = {}
     if max_tokens is not None:
         kwargs["max_tokens"] = max_tokens
     if temperature is not None:
         kwargs["temperature"] = temperature
-    if json_mode:
+    if top_p is not None:
+        kwargs["top_p"] = top_p
+    if top_k is not None:
+        kwargs["top_k"] = top_k
+    if frequency_penalty is not None:
+        kwargs["frequency_penalty"] = frequency_penalty
+    if presence_penalty is not None:
+        kwargs["presence_penalty"] = presence_penalty
+    if seed is not None:
+        kwargs["seed"] = seed
+    if stop is not None:
+        kwargs["stop"] = stop
+    if reasoning_effort is not None:
+        kwargs["reasoning"] = {"effort": reasoning_effort}
+    if provider is not None:
+        kwargs["provider"] = provider
+
+    # Resolve response format: explicit response_format > json_mode > none
+    if response_format is not None:
+        kwargs["response_format"] = response_format
+    elif json_mode:
         kwargs["response_format"] = {"type": "json_object"}
 
-    return client.chat_simple(resolved_model, prompt, system=system, **kwargs)
+    result = client.chat(resolved_model, msg_list, **kwargs)
+    return result["choices"][0]["message"]["content"]
 
 
 @mcp.tool()
