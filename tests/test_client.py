@@ -246,6 +246,68 @@ class TestListModels:
         assert len(result) == 1
 
 
+class TestEmbeddings:
+    def test_builds_payload(self, client):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "data": [{"object": "embedding", "embedding": [0.1, 0.2], "index": 0}],
+            "model": "mistralai/mistral-embed-2312",
+            "usage": {"prompt_tokens": 5, "total_tokens": 5},
+        }
+
+        with patch("requests.post", return_value=mock_resp) as mock_post:
+            result = client.embeddings("mistralai/mistral-embed-2312", "hello")
+            payload = mock_post.call_args[1]["json"]
+            assert payload["model"] == "mistralai/mistral-embed-2312"
+            assert payload["input"] == "hello"
+            assert result["data"][0]["embedding"] == [0.1, 0.2]
+
+    def test_list_input(self, client):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "data": [
+                {"object": "embedding", "embedding": [0.1], "index": 0},
+                {"object": "embedding", "embedding": [0.2], "index": 1},
+            ],
+            "model": "m/x",
+            "usage": {"prompt_tokens": 10, "total_tokens": 10},
+        }
+
+        with patch("requests.post", return_value=mock_resp) as mock_post:
+            client.embeddings("m/x", ["hello", "world"])
+            payload = mock_post.call_args[1]["json"]
+            assert payload["input"] == ["hello", "world"]
+
+    def test_optional_params(self, client):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"data": [], "model": "m/x", "usage": {}}
+
+        with patch("requests.post", return_value=mock_resp) as mock_post:
+            client.embeddings("m/x", "hello", encoding_format="base64", dimensions=512)
+            payload = mock_post.call_args[1]["json"]
+            assert payload["encoding_format"] == "base64"
+            assert payload["dimensions"] == 512
+
+
+class TestListModelsEmbeddingFilter:
+    def test_filter_embedding(self, client):
+        models = [
+            {"slug": "a/embed", "name": "Embed", "input_modalities": ["text"], "output_modalities": ["embeddings"], "supported_parameters": []},
+            {"slug": "b/chat", "name": "Chat", "input_modalities": ["text"], "output_modalities": ["text"], "supported_parameters": []},
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"data": models}
+
+        with patch("requests.get", return_value=mock_resp):
+            result = client.list_models("embedding")
+        assert len(result) == 1
+        assert result[0]["slug"] == "a/embed"
+
+
 class TestFindModel:
     def test_case_insensitive(self, client):
         models = [

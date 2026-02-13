@@ -28,6 +28,7 @@ mcp = FastMCP(
 Available tools:
 - chat: Text completion with any model
 - generate_image: Image generation with image models
+- embed: Generate embeddings with embedding models
 - list_models: List available models by capability
 - find_models: Search for models by name
 
@@ -229,6 +230,43 @@ def generate_image(
 
 
 @mcp.tool()
+def embed(
+    input: str | list[str],
+    model: Optional[str] = None,
+    encoding_format: Optional[str] = None,
+    dimensions: Optional[int] = None,
+) -> dict:
+    """Generate embeddings for text input using an OpenRouter embedding model.
+
+    Args:
+        input: Text string or list of strings to embed
+        model: Embedding model (e.g., "mistralai/mistral-embed-2312").
+            If not specified, uses DEFAULT_EMBEDDING_MODEL environment variable.
+        encoding_format: Output format: "float" or "base64" (default: float)
+        dimensions: Custom embedding dimensions (model-dependent)
+
+    Returns:
+        Embedding response with data array containing embedding vectors and usage info
+    """
+    resolved_model = model or get_default_model("embedding")
+    if not resolved_model:
+        raise ValueError(
+            "No model specified. Either pass the 'model' parameter or set "
+            "DEFAULT_EMBEDDING_MODEL environment variable."
+        )
+
+    client = get_client()
+
+    kwargs = {}
+    if encoding_format is not None:
+        kwargs["encoding_format"] = encoding_format
+    if dimensions is not None:
+        kwargs["dimensions"] = dimensions
+
+    return client.embeddings(resolved_model, input, **kwargs)
+
+
+@mcp.tool()
 def list_models(capability: Optional[str] = None) -> list[dict]:
     """List available OpenRouter models, optionally filtered by capability.
 
@@ -236,6 +274,7 @@ def list_models(capability: Optional[str] = None) -> list[dict]:
         capability: Filter by capability:
             - "vision": Models that can analyze images
             - "image_gen": Models that can generate images
+            - "embedding": Models that can generate embeddings
             - "tools": Models that support tool/function calling
             - "long_context": Models with 100k+ context window
 

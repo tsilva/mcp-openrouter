@@ -6,7 +6,7 @@
   [![Python](https://img.shields.io/pypi/pyversions/mcp-openrouter)](https://pypi.org/project/mcp-openrouter/)
   [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-  **🚀 Access 300+ AI models through a single MCP server — text, images, and model discovery at your fingertips 🤖**
+  **🚀 Access 300+ AI models through a single MCP server — text, images, embeddings, and model discovery at your fingertips 🤖**
 
 </div>
 
@@ -18,6 +18,7 @@ mcp-openrouter is an MCP (Model Context Protocol) server that provides seamless 
 
 - ✨ **Text Completion** — Chat with any OpenRouter model (Claude, GPT, Gemini, Mistral, etc.)
 - 🎨 **Image Generation** — Create images with DALL-E, Gemini, and other image models
+- 📐 **Embeddings** — Generate vector embeddings with Mistral, OpenAI, Gemini, and other embedding models
 - 🔍 **Model Discovery** — List and search 300+ models by capability
 - ⚡ **Persistent Connection** — No repeated setup or permission prompts
 - 🔧 **Zero Config** — Just set your API key and go
@@ -105,6 +106,7 @@ DEFAULT_TEXT_MODEL=anthropic/claude-sonnet-4
 DEFAULT_IMAGE_MODEL=google/gemini-3-pro-image-preview
 DEFAULT_CODE_MODEL=anthropic/claude-sonnet-4
 DEFAULT_VISION_MODEL=anthropic/claude-sonnet-4
+DEFAULT_EMBEDDING_MODEL=mistralai/mistral-embed-2312
 ```
 
 These are included in `.env.example` — copy it to `.env` and adjust as needed.
@@ -115,6 +117,7 @@ These are included in `.env.example` — copy it to `.env` and adjust as needed.
 |------|-------------|
 | `chat` | Send chat completion requests to any model |
 | `generate_image` | Generate images with image models |
+| `embed` | Generate vector embeddings for text |
 | `list_models` | List available models, filter by capability |
 | `find_models` | Search for models by name |
 
@@ -133,6 +136,11 @@ Use openrouter generate_image with google/gemini-3-pro-image-preview to create a
 **Find models:**
 ```
 Use openrouter find_models to search for "claude"
+```
+
+**Generate embeddings:**
+```
+Use openrouter embed with mistralai/mistral-embed-2312 to embed "Hello world"
 ```
 
 **List image generation models:**
@@ -172,13 +180,26 @@ Generate an image using an OpenRouter image model.
 
 *Required unless `DEFAULT_IMAGE_MODEL` is set.
 
+### embed
+
+Generate vector embeddings for text input.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `input` | string or list | Yes | Text string or list of strings to embed |
+| `model` | string | No* | Embedding model (e.g., `mistralai/mistral-embed-2312`) |
+| `encoding_format` | string | No | Output format: `float` or `base64` |
+| `dimensions` | int | No | Custom embedding dimensions (model-dependent) |
+
+*Required unless `DEFAULT_EMBEDDING_MODEL` is set.
+
 ### list_models
 
 List available models, optionally filtered by capability.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `capability` | string | No | Filter: `vision`, `image_gen`, `tools`, `long_context` |
+| `capability` | string | No | Filter: `vision`, `image_gen`, `embedding`, `tools`, `long_context` |
 
 ### find_models
 

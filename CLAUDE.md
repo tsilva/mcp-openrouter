@@ -39,6 +39,7 @@ Environment variables (set in `.env` file or shell):
 | `DEFAULT_IMAGE_MODEL` | Default model for `generate_image` tool (e.g., `google/gemini-3-pro-image-preview`) |
 | `DEFAULT_CODE_MODEL` | Default model for code-related tasks |
 | `DEFAULT_VISION_MODEL` | Default model for vision tasks |
+| `DEFAULT_EMBEDDING_MODEL` | Default model for `embed` tool (e.g., `mistralai/mistral-embed-2312`) |
 
 When default models are configured, the `model` parameter becomes optional in tool calls.
 
@@ -47,7 +48,7 @@ When default models are configured, the `model` parameter becomes optional in to
 This is an MCP (Model Context Protocol) server built with FastMCP that exposes OpenRouter's API as tools.
 
 **Key components:**
-- `src/mcp_openrouter/server.py` - MCP server with tool definitions (`chat`, `generate_image`, `list_models`, `find_models`)
+- `src/mcp_openrouter/server.py` - MCP server with tool definitions (`chat`, `generate_image`, `embed`, `list_models`, `find_models`)
 - `src/mcp_openrouter/client.py` - `OpenRouterClient` class handling API requests with retry logic
 - `src/mcp_openrouter/config.py` - Configuration management for default models
 

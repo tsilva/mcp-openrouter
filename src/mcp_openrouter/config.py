@@ -8,6 +8,7 @@ MODEL_DEFAULTS = {
     "image": "DEFAULT_IMAGE_MODEL",
     "code": "DEFAULT_CODE_MODEL",
     "vision": "DEFAULT_VISION_MODEL",
+    "embedding": "DEFAULT_EMBEDDING_MODEL",
 }
 
 
@@ -15,7 +16,7 @@ def get_default_model(category: str) -> Optional[str]:
     """Get the default model for a given category.
 
     Args:
-        category: Model category ("text", "image", "code", "vision")
+        category: Model category ("text", "image", "code", "vision", "embedding")
 
     Returns:
         The configured default model identifier, or None if not set.

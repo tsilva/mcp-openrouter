@@ -6,11 +6,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from mcp_openrouter.server import chat as _chat_tool, generate_image as _gen_tool, list_models as _list_tool, find_models as _find_tool, get_client
+from mcp_openrouter.server import chat as _chat_tool, generate_image as _gen_tool, embed as _embed_tool, list_models as _list_tool, find_models as _find_tool, get_client
 
 # Unwrap FastMCP FunctionTool wrappers to get the raw functions
 chat = _chat_tool.fn
 generate_image = _gen_tool.fn
+embed = _embed_tool.fn
 list_models = _list_tool.fn
 find_models = _find_tool.fn
 
@@ -201,6 +202,75 @@ class TestGenerateImageTool:
 
         with pytest.raises(ValueError, match="No image"):
             generate_image(prompt="a cat", model="m/x")
+
+
+class TestEmbedTool:
+    def test_raises_without_model_or_default(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError, match="No model"):
+                embed(input="hello")
+
+    @patch("mcp_openrouter.server.get_client")
+    def test_string_input(self, mock_gc):
+        client = MagicMock()
+        client.embeddings.return_value = {
+            "data": [{"object": "embedding", "embedding": [0.1, 0.2], "index": 0}],
+            "model": "m/x",
+            "usage": {"prompt_tokens": 5, "total_tokens": 5},
+        }
+        mock_gc.return_value = client
+
+        result = embed(input="hello", model="m/x")
+        client.embeddings.assert_called_once_with("m/x", "hello")
+        assert result["data"][0]["embedding"] == [0.1, 0.2]
+
+    @patch("mcp_openrouter.server.get_client")
+    def test_list_input(self, mock_gc):
+        client = MagicMock()
+        client.embeddings.return_value = {
+            "data": [
+                {"object": "embedding", "embedding": [0.1], "index": 0},
+                {"object": "embedding", "embedding": [0.2], "index": 1},
+            ],
+            "model": "m/x",
+            "usage": {"prompt_tokens": 10, "total_tokens": 10},
+        }
+        mock_gc.return_value = client
+
+        result = embed(input=["hello", "world"], model="m/x")
+        client.embeddings.assert_called_once_with("m/x", ["hello", "world"])
+        assert len(result["data"]) == 2
+
+    @patch("mcp_openrouter.server.get_client")
+    def test_optional_params_forwarded(self, mock_gc):
+        client = MagicMock()
+        client.embeddings.return_value = {"data": [], "model": "m/x", "usage": {}}
+        mock_gc.return_value = client
+
+        embed(input="hello", model="m/x", encoding_format="base64", dimensions=512)
+        client.embeddings.assert_called_once_with(
+            "m/x", "hello", encoding_format="base64", dimensions=512
+        )
+
+    @patch("mcp_openrouter.server.get_client")
+    @patch.dict(os.environ, {"DEFAULT_EMBEDDING_MODEL": "default/embed"})
+    def test_uses_default_model(self, mock_gc):
+        client = MagicMock()
+        client.embeddings.return_value = {"data": [], "model": "default/embed", "usage": {}}
+        mock_gc.return_value = client
+
+        embed(input="hello")
+        assert client.embeddings.call_args[0][0] == "default/embed"
+
+    @patch("mcp_openrouter.server.get_client")
+    def test_omits_none_params(self, mock_gc):
+        client = MagicMock()
+        client.embeddings.return_value = {"data": [], "model": "m/x", "usage": {}}
+        mock_gc.return_value = client
+
+        embed(input="hello", model="m/x")
+        # Should only pass model and input, no extra kwargs
+        client.embeddings.assert_called_once_with("m/x", "hello")
 
 
 class TestListModelsTool:

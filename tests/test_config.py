@@ -23,6 +23,10 @@ class TestGetDefaultModel:
         with patch.dict(os.environ, {"DEFAULT_VISION_MODEL": "vision/model"}):
             assert get_default_model("vision") == "vision/model"
 
+    def test_embedding(self):
+        with patch.dict(os.environ, {"DEFAULT_EMBEDDING_MODEL": "embed/model"}):
+            assert get_default_model("embedding") == "embed/model"
+
     def test_not_set(self):
         with patch.dict(os.environ, {}, clear=True):
             assert get_default_model("text") is None

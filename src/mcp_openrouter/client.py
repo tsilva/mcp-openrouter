@@ -200,6 +200,10 @@ class OpenRouterClient:
                 models = [
                     m for m in models if "image" in m.get("output_modalities", [])
                 ]
+            elif capability == "embedding":
+                models = [
+                    m for m in models if "embeddings" in m.get("output_modalities", [])
+                ]
             elif capability == "tools":
                 models = [
                     m for m in models if "tools" in m.get("supported_parameters", [])
@@ -208,6 +212,21 @@ class OpenRouterClient:
                 models = [m for m in models if m.get("context_length", 0) >= 100000]
 
         return models
+
+    def embeddings(self, model: str, input: str | list[str], **kwargs) -> dict:
+        """Generate embeddings for text input.
+
+        Args:
+            model: Embedding model identifier (e.g., "mistralai/mistral-embed-2312")
+            input: Text string or list of strings to embed
+            **kwargs: Additional parameters (encoding_format, dimensions)
+
+        Returns:
+            Full API response dict
+        """
+        payload = {"model": model, "input": input}
+        payload.update(kwargs)
+        return self._request("POST", "embeddings", payload)
 
     def find_model(self, search_term: str) -> list:
         """Find models matching search term.
