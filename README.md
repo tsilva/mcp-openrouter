@@ -6,7 +6,7 @@
   [![Python](https://img.shields.io/pypi/pyversions/mcp-openrouter)](https://pypi.org/project/mcp-openrouter/)
   [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-  **🚀 Access 300+ AI models through a single MCP server — text, images, and model discovery at your fingertips**
+  **🚀 Access 300+ AI models through a single MCP server — text, images, and model discovery at your fingertips 🤖**
 
 </div>
 
