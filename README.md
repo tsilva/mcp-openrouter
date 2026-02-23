@@ -12,6 +12,8 @@
 
 ## Overview
 
+[![CI](https://github.com/tsilva/mcp-openrouter/actions/workflows/release.yml/badge.svg)](https://github.com/tsilva/mcp-openrouter/actions/workflows/release.yml)
+
 mcp-openrouter is an MCP (Model Context Protocol) server that provides seamless access to OpenRouter's extensive catalog of AI models. Use Claude, GPT, Gemini, Llama, and 300+ other models through a unified interface.
 
 ## Features
