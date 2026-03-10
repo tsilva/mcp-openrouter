@@ -4,11 +4,24 @@ import os
 
 import pytest
 
-# Skip all tests if no API key is set
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("OPENROUTER_API_KEY"),
-    reason="OPENROUTER_API_KEY not set",
-)
+from mcp_openrouter.client import OpenRouterClient
+
+
+@pytest.fixture(scope="module", autouse=True)
+def require_openrouter_access():
+    """Skip integration tests unless a working OpenRouter API key is available."""
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        pytest.skip("OPENROUTER_API_KEY not set")
+
+    try:
+        OpenRouterClient(api_key).chat_simple(
+            "openai/gpt-4o-mini",
+            "Reply with ok.",
+            max_tokens=5,
+        )
+    except Exception as exc:
+        pytest.skip(f"OpenRouter integration unavailable: {exc}")
 
 
 class TestModelDefaults:

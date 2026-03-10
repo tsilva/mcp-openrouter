@@ -1,7 +1,7 @@
 """Unit tests for OpenRouterClient (mocked HTTP)."""
 
 import base64
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
@@ -64,13 +64,26 @@ class TestRequest:
             with pytest.raises(Exception, match=f"OpenRouter error {code}"):
                 client._request("POST", "endpoint", {}, max_retries=3)
 
+    def test_non_json_error_uses_response_text(self, client):
+        resp = MagicMock()
+        resp.status_code = 500
+        resp.text = "upstream exploded"
+        resp.json.side_effect = ValueError("not json")
+
+        with patch("requests.post", return_value=resp):
+            with pytest.raises(Exception, match="upstream exploded"):
+                client._request("POST", "endpoint", {}, max_retries=1)
+
     def test_timeout_retries_then_raises(self, client):
         with patch("requests.post", side_effect=requests.exceptions.Timeout):
             with pytest.raises(Exception, match="timed out"):
                 client._request("POST", "endpoint", {}, max_retries=2)
 
     def test_network_error_raises_immediately(self, client):
-        with patch("requests.post", side_effect=requests.exceptions.ConnectionError("fail")):
+        with patch(
+            "requests.post",
+            side_effect=requests.exceptions.ConnectionError("fail"),
+        ):
             with pytest.raises(Exception, match="Network error"):
                 client._request("POST", "endpoint", {})
 
@@ -92,7 +105,11 @@ class TestChat:
         mock_resp.json.return_value = {"choices": [{"message": {"content": "hi"}}]}
 
         with patch("requests.post", return_value=mock_resp) as mock_post:
-            client.chat("model/x", [{"role": "user", "content": "hello"}], temperature=0.5)
+            client.chat(
+                "model/x",
+                [{"role": "user", "content": "hello"}],
+                temperature=0.5,
+            )
             payload = mock_post.call_args[1]["json"]
             assert payload["model"] == "model/x"
             assert payload["messages"] == [{"role": "user", "content": "hello"}]
@@ -103,7 +120,9 @@ class TestChatSimple:
     def test_returns_content(self, client):
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        mock_resp.json.return_value = {"choices": [{"message": {"content": "response"}}]}
+        mock_resp.json.return_value = {
+            "choices": [{"message": {"content": "response"}}]
+        }
 
         with patch("requests.post", return_value=mock_resp) as mock_post:
             result = client.chat_simple("model/x", "hello")
@@ -128,13 +147,23 @@ class TestGenerateImage:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.json.return_value = {
-            "choices": [{"message": {"images": [
-                {"image_url": {"url": "data:image/png;base64,AAAA"}}
-            ]}}]
+            "choices": [
+                {
+                    "message": {
+                        "images": [{"image_url": {"url": "data:image/png;base64,AAAA"}}]
+                    }
+                }
+            ]
         }
 
         with patch("requests.post", return_value=mock_resp) as mock_post:
-            result = client.generate_image("model/x", "a cat", background="transparent", quality="high", output_format="png")
+            result = client.generate_image(
+                "model/x",
+                "a cat",
+                background="transparent",
+                quality="high",
+                output_format="png",
+            )
             payload = mock_post.call_args[1]["json"]
             assert payload["model"] == "model/x"
             assert payload["modalities"] == ["image", "text"]
@@ -148,9 +177,15 @@ class TestGenerateImage:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.json.return_value = {
-            "choices": [{"message": {"images": [
-                {"image_url": {"url": f"data:image/png;base64,{img_data}"}}
-            ]}}]
+            "choices": [
+                {
+                    "message": {
+                        "images": [
+                            {"image_url": {"url": f"data:image/png;base64,{img_data}"}}
+                        ]
+                    }
+                }
+            ]
         }
 
         out = tmp_path / "output.png"
@@ -163,10 +198,16 @@ class TestGenerateImage:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.json.return_value = {
-            "choices": [{"message": {"images": [
-                {"image_url": {"url": f"data:image/png;base64,{img_data}"}},
-                {"image_url": {"url": f"data:image/png;base64,{img_data}"}},
-            ]}}]
+            "choices": [
+                {
+                    "message": {
+                        "images": [
+                            {"image_url": {"url": f"data:image/png;base64,{img_data}"}},
+                            {"image_url": {"url": f"data:image/png;base64,{img_data}"}},
+                        ]
+                    }
+                }
+            ]
         }
 
         out = tmp_path / "output.png"
@@ -181,11 +222,18 @@ class TestListModels:
     def test_returns_models(self, client):
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        mock_resp.json.return_value = {"data": [
-            {"slug": "a/b", "name": "B", "context_length": 4096,
-             "input_modalities": ["text"], "output_modalities": ["text"],
-             "supported_parameters": ["tools"]},
-        ]}
+        mock_resp.json.return_value = {
+            "data": [
+                {
+                    "slug": "a/b",
+                    "name": "B",
+                    "context_length": 4096,
+                    "input_modalities": ["text"],
+                    "output_modalities": ["text"],
+                    "supported_parameters": ["tools"],
+                },
+            ]
+        }
 
         with patch("requests.get", return_value=mock_resp):
             result = client.list_models()
@@ -194,8 +242,20 @@ class TestListModels:
 
     def test_filter_vision(self, client):
         models = [
-            {"slug": "a", "name": "A", "input_modalities": ["image", "text"], "output_modalities": ["text"], "supported_parameters": []},
-            {"slug": "b", "name": "B", "input_modalities": ["text"], "output_modalities": ["text"], "supported_parameters": []},
+            {
+                "slug": "a",
+                "name": "A",
+                "input_modalities": ["image", "text"],
+                "output_modalities": ["text"],
+                "supported_parameters": [],
+            },
+            {
+                "slug": "b",
+                "name": "B",
+                "input_modalities": ["text"],
+                "output_modalities": ["text"],
+                "supported_parameters": [],
+            },
         ]
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -208,8 +268,20 @@ class TestListModels:
 
     def test_filter_image_gen(self, client):
         models = [
-            {"slug": "a", "name": "A", "input_modalities": ["text"], "output_modalities": ["image"], "supported_parameters": []},
-            {"slug": "b", "name": "B", "input_modalities": ["text"], "output_modalities": ["text"], "supported_parameters": []},
+            {
+                "slug": "a",
+                "name": "A",
+                "input_modalities": ["text"],
+                "output_modalities": ["image"],
+                "supported_parameters": [],
+            },
+            {
+                "slug": "b",
+                "name": "B",
+                "input_modalities": ["text"],
+                "output_modalities": ["text"],
+                "supported_parameters": [],
+            },
         ]
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -295,8 +367,20 @@ class TestEmbeddings:
 class TestListModelsEmbeddingFilter:
     def test_filter_embedding(self, client):
         models = [
-            {"slug": "a/embed", "name": "Embed", "input_modalities": ["text"], "output_modalities": ["embeddings"], "supported_parameters": []},
-            {"slug": "b/chat", "name": "Chat", "input_modalities": ["text"], "output_modalities": ["text"], "supported_parameters": []},
+            {
+                "slug": "a/embed",
+                "name": "Embed",
+                "input_modalities": ["text"],
+                "output_modalities": ["embeddings"],
+                "supported_parameters": [],
+            },
+            {
+                "slug": "b/chat",
+                "name": "Chat",
+                "input_modalities": ["text"],
+                "output_modalities": ["text"],
+                "supported_parameters": [],
+            },
         ]
         mock_resp = MagicMock()
         mock_resp.status_code = 200

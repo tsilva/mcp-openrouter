@@ -39,6 +39,9 @@ Or run directly with uvx:
 uvx mcp-openrouter
 ```
 
+The server reads `OPENROUTER_API_KEY` from your shell environment or a `.env` file in
+the current working directory.
+
 ### Configuration
 
 #### Claude Code
