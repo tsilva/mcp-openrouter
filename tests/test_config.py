@@ -8,7 +8,10 @@ from mcp_openrouter.config import get_default_model
 
 class TestGetDefaultModel:
     def test_text(self):
-        with patch.dict(os.environ, {"DEFAULT_TEXT_MODEL": "anthropic/claude-sonnet-4"}):
+        with patch.dict(
+            os.environ,
+            {"DEFAULT_TEXT_MODEL": "anthropic/claude-sonnet-4"},
+        ):
             assert get_default_model("text") == "anthropic/claude-sonnet-4"
 
     def test_image(self):

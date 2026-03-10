@@ -16,9 +16,22 @@ from fastmcp.utilities.types import Image
 from mcp_openrouter.client import OpenRouterClient
 from mcp_openrouter.config import get_default_model
 
-# Load .env from the package directory (where the repo is cloned)
-_package_dir = Path(__file__).parent.parent.parent
-load_dotenv(_package_dir / ".env")
+
+def _load_env_files() -> None:
+    """Load environment variables from the working tree and current directory."""
+    package_root = Path(__file__).resolve().parents[2]
+    env_paths = (Path.cwd() / ".env", package_root / ".env")
+    seen_paths: set[Path] = set()
+
+    for env_path in env_paths:
+        resolved_path = env_path.resolve()
+        if resolved_path in seen_paths:
+            continue
+        seen_paths.add(resolved_path)
+        load_dotenv(resolved_path)
+
+
+_load_env_files()
 
 # Initialize FastMCP server
 mcp = FastMCP(
@@ -36,6 +49,12 @@ Requires OPENROUTER_API_KEY environment variable.""",
 )
 
 
+def _register_tool(fn, *, name: str):
+    """Register a FastMCP tool while preserving a directly callable function."""
+    mcp.tool(fn, name=name)
+    return fn
+
+
 def get_client() -> OpenRouterClient:
     """Get an initialized OpenRouter client."""
     api_key = os.environ.get("OPENROUTER_API_KEY")
@@ -47,8 +66,7 @@ def get_client() -> OpenRouterClient:
     return OpenRouterClient(api_key)
 
 
-@mcp.tool()
-def chat(
+def _chat(
     prompt: Optional[str] = None,
     messages: Optional[list[dict]] = None,
     model: Optional[str] = None,
@@ -155,8 +173,10 @@ def chat(
     return result["choices"][0]["message"]["content"]
 
 
-@mcp.tool()
-def generate_image(
+chat = _register_tool(_chat, name="chat")
+
+
+def _generate_image(
     prompt: str,
     model: Optional[str] = None,
     aspect_ratio: str = "1:1",
@@ -229,8 +249,10 @@ def generate_image(
     return Image(data=image_data, format=img_format)
 
 
-@mcp.tool()
-def embed(
+generate_image = _register_tool(_generate_image, name="generate_image")
+
+
+def _embed(
     input: str | list[str],
     model: Optional[str] = None,
     encoding_format: Optional[str] = None,
@@ -266,8 +288,10 @@ def embed(
     return client.embeddings(resolved_model, input, **kwargs)
 
 
-@mcp.tool()
-def list_models(capability: Optional[str] = None) -> list[dict]:
+embed = _register_tool(_embed, name="embed")
+
+
+def _list_models(capability: Optional[str] = None) -> list[dict]:
     """List available OpenRouter models, optionally filtered by capability.
 
     Args:
@@ -299,8 +323,10 @@ def list_models(capability: Optional[str] = None) -> list[dict]:
     ]
 
 
-@mcp.tool()
-def find_models(search_term: str) -> list[dict]:
+list_models = _register_tool(_list_models, name="list_models")
+
+
+def _find_models(search_term: str) -> list[dict]:
     """Search for models by name or slug.
 
     Args:
@@ -321,6 +347,9 @@ def find_models(search_term: str) -> list[dict]:
         }
         for m in matches[:20]
     ]
+
+
+find_models = _register_tool(_find_models, name="find_models")
 
 
 def main():

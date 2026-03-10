@@ -47,9 +47,7 @@ class OpenRouterClient:
                 if response.status_code == 200:
                     return response.json()
 
-                error = response.json().get("error", {})
-                code = error.get("code", response.status_code)
-                message = error.get("message", response.text)
+                code, message = self._parse_error_response(response)
 
                 # Retryable errors
                 if code in [408, 429, 502, 503] and attempt < max_retries - 1:
@@ -80,6 +78,19 @@ class OpenRouterClient:
                 raise Exception(f"Network error: {e}")
 
         raise Exception("Max retries exceeded")
+
+    @staticmethod
+    def _parse_error_response(response) -> tuple[int, str]:
+        """Extract an error code and message from JSON or plain-text responses."""
+        try:
+            payload = response.json()
+        except ValueError:
+            return response.status_code, response.text
+
+        error = payload.get("error", {})
+        code = error.get("code", response.status_code)
+        message = error.get("message") or payload.get("message") or response.text
+        return code, message
 
     def chat(self, model: str, messages: list, **kwargs) -> dict:
         """Send chat completion request.

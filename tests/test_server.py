@@ -6,14 +6,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from mcp_openrouter.server import chat as _chat_tool, generate_image as _gen_tool, embed as _embed_tool, list_models as _list_tool, find_models as _find_tool, get_client
-
-# Unwrap FastMCP FunctionTool wrappers to get the raw functions
-chat = _chat_tool.fn
-generate_image = _gen_tool.fn
-embed = _embed_tool.fn
-list_models = _list_tool.fn
-find_models = _find_tool.fn
+from mcp_openrouter.server import (
+    chat,
+    embed,
+    find_models,
+    generate_image,
+    get_client,
+    list_models,
+)
 
 
 def _mock_chat_response(content="response"):
@@ -23,9 +23,15 @@ def _mock_chat_response(content="response"):
 def _make_image_response(fmt="png", data=b"fake"):
     b64 = base64.b64encode(data).decode()
     return {
-        "choices": [{"message": {"images": [
-            {"image_url": {"url": f"data:image/{fmt};base64,{b64}"}}
-        ]}}]
+        "choices": [
+            {
+                "message": {
+                    "images": [
+                        {"image_url": {"url": f"data:image/{fmt};base64,{b64}"}}
+                    ]
+                }
+            }
+        ]
     }
 
 
@@ -54,7 +60,10 @@ class TestChatTool:
         client.chat.return_value = _mock_chat_response()
         mock_gc.return_value = client
 
-        conv = [{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hey"}]
+        conv = [
+            {"role": "user", "content": "hi"},
+            {"role": "assistant", "content": "hey"},
+        ]
         chat(messages=conv, model="m/x")
         msgs = client.chat.call_args[0][1]
         assert msgs == conv
@@ -99,9 +108,18 @@ class TestChatTool:
         client.chat.return_value = _mock_chat_response()
         mock_gc.return_value = client
 
-        chat(prompt="hi", model="m/x", temperature=0.5, max_tokens=100, top_p=0.9,
-             top_k=50, frequency_penalty=0.1, presence_penalty=0.2, seed=42,
-             stop=["END"])
+        chat(
+            prompt="hi",
+            model="m/x",
+            temperature=0.5,
+            max_tokens=100,
+            top_p=0.9,
+            top_k=50,
+            frequency_penalty=0.1,
+            presence_penalty=0.2,
+            seed=42,
+            stop=["END"],
+        )
         kwargs = client.chat.call_args[1]
         assert kwargs["temperature"] == 0.5
         assert kwargs["max_tokens"] == 100
@@ -160,7 +178,12 @@ class TestGenerateImageTool:
     def test_raises_on_relative_output_path(self, mock_gc):
         client = MagicMock()
         client.generate_image.return_value = [
-            {"image_url": {"url": "data:image/png;base64," + base64.b64encode(b"x").decode()}}
+            {
+                "image_url": {
+                    "url": "data:image/png;base64,"
+                    + base64.b64encode(b"x").decode()
+                }
+            }
         ]
         mock_gc.return_value = client
 
@@ -256,7 +279,11 @@ class TestEmbedTool:
     @patch.dict(os.environ, {"DEFAULT_EMBEDDING_MODEL": "default/embed"})
     def test_uses_default_model(self, mock_gc):
         client = MagicMock()
-        client.embeddings.return_value = {"data": [], "model": "default/embed", "usage": {}}
+        client.embeddings.return_value = {
+            "data": [],
+            "model": "default/embed",
+            "usage": {},
+        }
         mock_gc.return_value = client
 
         embed(input="hello")
@@ -278,8 +305,12 @@ class TestListModelsTool:
     def test_returns_simplified(self, mock_gc):
         client = MagicMock()
         client.list_models.return_value = [
-            {"slug": "a/b", "name": "B", "context_length": 4096,
-             "pricing": {"prompt": "0.01", "completion": "0.02"}},
+            {
+                "slug": "a/b",
+                "name": "B",
+                "context_length": 4096,
+                "pricing": {"prompt": "0.01", "completion": "0.02"},
+            },
         ]
         mock_gc.return_value = client
 
