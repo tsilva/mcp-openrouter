@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-openrouter"
-version = "1.0.0"
 description = "MCP server providing access to 300+ AI models via OpenRouter"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
+dynamic = ["version"]
 authors = [{ name = "tsilva" }]
 keywords = ["mcp", "openrouter", "ai", "llm", "claude", "gpt", "gemini"]
 classifiers = [
@@ -43,6 +43,9 @@ Issues = "https://github.com/tsilva/mcp-openrouter/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mcp_openrouter"]
+
+[tool.hatch.version]
+path = "src/mcp_openrouter/__init__.py"
 
 [tool.ruff]
 line-length = 88
