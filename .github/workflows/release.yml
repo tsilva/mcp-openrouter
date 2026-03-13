@@ -44,7 +44,42 @@ jobs:
           fetch-depth: 0
       - name: Check version
         id: check-version
-        uses: tsilva/.github/.github/actions/check-version@main
+        shell: bash
+        run: |
+          VERSION=$(python -c "
+          import tomllib
+          import re
+
+          with open('pyproject.toml', 'rb') as f:
+              config = tomllib.load(f)
+
+          project = config.get('project', {})
+
+          if 'version' in project:
+              print(project['version'])
+          elif 'version' in project.get('dynamic', []):
+              hatch_config = config.get('tool', {}).get('hatch', {}).get('version', {})
+              version_path = hatch_config.get('path')
+              if version_path:
+                  with open(version_path) as vf:
+                      content = vf.read()
+                      match = re.search(r'__version__\\s*=\\s*[\"\\']([^\"\\']+)[\"\\']', content)
+                      if match:
+                          print(match.group(1))
+                      else:
+                          raise ValueError(f'Could not find __version__ in {version_path}')
+              else:
+                  raise ValueError('Dynamic version specified but no hatch.version.path found')
+          else:
+              raise ValueError('No version found in pyproject.toml')
+          ")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          if git rev-parse "refs/tags/v$VERSION" >/dev/null 2>&1; then
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Setup uv
         if: steps.check-version.outputs.tag_exists == 'false'
         uses: astral-sh/setup-uv@v7
