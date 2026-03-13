@@ -34,7 +34,7 @@ dev = [
 ]
 
 [project.scripts]
-mcp-openrouter = "mcp_openrouter.server:main"
+mcp-openrouter = "mcp_openrouter.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/tsilva/mcp-openrouter"
