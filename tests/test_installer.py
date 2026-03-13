@@ -429,6 +429,41 @@ class TestRunInstall:
 
         assert run_install(args) == 0
 
+    def test_prints_uninstall_command_for_selected_clients(self, monkeypatch, capsys):
+        args = argparse.Namespace(
+            yes=True,
+            clients="codex,claude",
+            api_key="sk-key",
+            force=False,
+        )
+        monkeypatch.setattr(
+            "mcp_openrouter.installer.ensure_uv_available",
+            lambda: None,
+        )
+        monkeypatch.setattr(
+            "mcp_openrouter.installer.detect_clients",
+            lambda: {"codex": "/usr/bin/codex", "claude": "/usr/bin/claude"},
+        )
+        monkeypatch.setitem(
+            installer_module.INSTALLERS,
+            "codex",
+            lambda api_key, force, interactive: "installed",
+        )
+        monkeypatch.setitem(
+            installer_module.INSTALLERS,
+            "claude",
+            lambda api_key, force, interactive: "installed",
+        )
+
+        assert run_install(args) == 0
+
+        captured = capsys.readouterr()
+        assert "To uninstall later:" in captured.out
+        assert (
+            "uvx mcp-openrouter uninstall --yes --clients codex,claude"
+            in captured.out
+        )
+
 
 class TestRunUninstall:
     def test_yes_uninstalls_all_selected_clients(self, monkeypatch):
