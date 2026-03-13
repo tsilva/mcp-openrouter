@@ -5,7 +5,13 @@ from __future__ import annotations
 import argparse
 import sys
 
-from mcp_openrouter.installer import InstallerError, add_install_subparser, run_install
+from mcp_openrouter.installer import (
+    InstallerError,
+    add_install_subparser,
+    add_uninstall_subparser,
+    run_install,
+    run_uninstall,
+)
 from mcp_openrouter.server import main as serve_main
 
 
@@ -14,6 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mcp-openrouter")
     subparsers = parser.add_subparsers(dest="command")
     add_install_subparser(subparsers)
+    add_uninstall_subparser(subparsers)
     subparsers.add_parser("serve", help="Run the MCP server over stdio")
     return parser
 
@@ -30,6 +37,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "install":
         try:
             return run_install(args)
+        except InstallerError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+
+    if args.command == "uninstall":
+        try:
+            return run_uninstall(args)
         except InstallerError as exc:
             print(f"Error: {exc}", file=sys.stderr)
             return 1

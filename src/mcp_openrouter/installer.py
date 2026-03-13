@@ -28,21 +28,26 @@ class InstallerError(RuntimeError):
     """Raised when installation cannot proceed."""
 
 
+def add_client_selection_arguments(parser: argparse.ArgumentParser, *, action: str) -> None:
+    """Add shared client-selection arguments to a subparser."""
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help=f"{action.capitalize()} all detected clients without selection prompts",
+    )
+    parser.add_argument(
+        "--clients",
+        help="Comma-separated list of clients to target: codex,claude,opencode",
+    )
+
+
 def add_install_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Add the install subcommand to a parser."""
     parser = subparsers.add_parser(
         "install",
         help="Install mcp-openrouter into supported MCP clients",
     )
-    parser.add_argument(
-        "--yes",
-        action="store_true",
-        help="Install into all detected clients without selection prompts",
-    )
-    parser.add_argument(
-        "--clients",
-        help="Comma-separated list of clients to install into: codex,claude,opencode",
-    )
+    add_client_selection_arguments(parser, action="install into")
     parser.add_argument(
         "--api-key",
         help="OpenRouter API key to persist into installed MCP configs",
@@ -52,6 +57,15 @@ def add_install_subparser(subparsers: argparse._SubParsersAction) -> None:
         action="store_true",
         help="Replace existing openrouter MCP configs without prompting",
     )
+
+
+def add_uninstall_subparser(subparsers: argparse._SubParsersAction) -> None:
+    """Add the uninstall subcommand to a parser."""
+    parser = subparsers.add_parser(
+        "uninstall",
+        help="Remove mcp-openrouter from supported MCP clients",
+    )
+    add_client_selection_arguments(parser, action="uninstall from")
 
 
 def client_supports_mcp(
@@ -420,16 +434,64 @@ def install_opencode(
     return "installed"
 
 
+def uninstall_codex() -> str:
+    """Remove openrouter from Codex."""
+    existing = get_existing_codex_server()
+    if not existing:
+        return "not installed"
+
+    result = run_command(["codex", "mcp", "remove", SERVER_NAME])
+    if result.returncode != 0:
+        message = result.stderr.strip() or result.stdout.strip()
+        raise InstallerError(f"Failed to uninstall from Codex: {message}")
+    return "uninstalled"
+
+
+def uninstall_claude() -> str:
+    """Remove openrouter from Claude Code."""
+    existing = get_existing_claude_server()
+    if not existing:
+        return "not installed"
+
+    result = run_command(["claude", "mcp", "remove", "-s", "user", SERVER_NAME])
+    if result.returncode != 0:
+        message = result.stderr.strip() or result.stdout.strip()
+        raise InstallerError(f"Failed to uninstall from Claude Code: {message}")
+    return "uninstalled"
+
+
+def uninstall_opencode(settings_path: Path | None = None) -> str:
+    """Remove openrouter from opencode settings."""
+    settings, existing, path = get_existing_opencode_server(settings_path)
+    if not existing:
+        return "not installed"
+
+    servers = dict(settings.get("mcp") or {})
+    servers.pop(SERVER_NAME, None)
+    if servers:
+        settings["mcp"] = servers
+    else:
+        settings.pop("mcp", None)
+    write_json_atomic(path, settings)
+    return "uninstalled"
+
+
 INSTALLERS = {
     "codex": install_codex,
     "claude": install_claude,
     "opencode": install_opencode,
 }
 
+UNINSTALLERS = {
+    "codex": uninstall_codex,
+    "claude": uninstall_claude,
+    "opencode": uninstall_opencode,
+}
 
-def run_install(args: argparse.Namespace) -> int:
-    """Run the installer."""
-    ensure_uv_available()
+
+def resolve_target_clients(args: argparse.Namespace) -> tuple[list[str], list[str], bool]:
+    """Resolve detected, eligible, and selected clients for an operation."""
+    command_name = getattr(args, "command", "install")
     detected = detect_clients()
     requested = parse_requested_clients(args.clients)
     clients = choose_clients(detected, requested)
@@ -440,16 +502,26 @@ def run_install(args: argparse.Namespace) -> int:
             "Install Codex, Claude Code, or opencode first."
         )
 
-    api_key = resolve_api_key(args.api_key)
     interactive = not args.yes and requested is None
-
     selected: list[str] = []
     if requested is not None or args.yes:
         selected = clients
     else:
         for client in clients:
-            if prompt_yes_no(f"Install into {client}?", default=True):
+            if prompt_yes_no(
+                f"{command_name.capitalize()} {SERVER_NAME} for {client}?",
+                default=True,
+            ):
                 selected.append(client)
+
+    return clients, selected, interactive
+
+
+def run_install(args: argparse.Namespace) -> int:
+    """Run the installer."""
+    ensure_uv_available()
+    api_key = resolve_api_key(args.api_key)
+    _, selected, interactive = resolve_target_clients(args)
 
     if not selected:
         print("No clients selected.")
@@ -468,4 +540,20 @@ def run_install(args: argparse.Namespace) -> int:
         print("  claude mcp remove -s user openrouter")
     if "opencode" in selected:
         print("  Remove `openrouter` from ~/.opencode/settings.json under `mcp`.")
+    return 0
+
+
+def run_uninstall(args: argparse.Namespace) -> int:
+    """Run the uninstaller."""
+    _, selected, _ = resolve_target_clients(args)
+
+    if not selected:
+        print("No clients selected.")
+        return 0
+
+    for client in selected:
+        uninstaller = UNINSTALLERS[client]
+        status = uninstaller()
+        print(f"{client}: {status}")
+
     return 0
