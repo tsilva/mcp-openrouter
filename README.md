@@ -77,11 +77,23 @@ If an existing `openrouter` config already matches, the installer skips it. If i
 ### Uninstall
 
 ```bash
+uvx mcp-openrouter uninstall
+```
+
+Remove only specific clients:
+
+```bash
+uvx mcp-openrouter uninstall --yes --clients claude,opencode
+```
+
+Equivalent manual commands:
+
+```bash
 codex mcp remove openrouter
 claude mcp remove -s user openrouter
 ```
 
-For opencode, remove the `openrouter` entry from `~/.opencode/settings.json` under `mcp`.
+For opencode, the uninstaller removes the `openrouter` entry from `~/.opencode/settings.json` under `mcp`.
 
 ### Running the server directly
 
