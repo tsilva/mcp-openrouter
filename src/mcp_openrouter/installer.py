@@ -17,6 +17,11 @@ SERVER_NAME = "openrouter"
 SUPPORTED_CLIENTS = ("codex", "claude", "opencode")
 RUNTIME_COMMAND = ("uvx", "mcp-openrouter")
 API_KEY_ENV_VAR = "OPENROUTER_API_KEY"
+CLIENT_PROBE_COMMANDS = {
+    "codex": ["codex", "mcp", "--help"],
+    "claude": ["claude", "mcp", "--help"],
+    "opencode": ["opencode", "mcp", "--help"],
+}
 
 
 class InstallerError(RuntimeError):
@@ -49,12 +54,28 @@ def add_install_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
 
 
-def detect_clients(which: Any = shutil.which) -> dict[str, str]:
+def client_supports_mcp(
+    client_name: str,
+    *,
+    runner: Any | None = None,
+) -> bool:
+    """Return whether the installed client exposes the required MCP commands."""
+    command = CLIENT_PROBE_COMMANDS[client_name]
+    execute = runner or run_command
+    result = execute(command)
+    return result.returncode == 0
+
+
+def detect_clients(
+    which: Any = shutil.which,
+    *,
+    runner: Any | None = None,
+) -> dict[str, str]:
     """Return supported clients found on PATH."""
     detected: dict[str, str] = {}
     for name in SUPPORTED_CLIENTS:
         path = which(name)
-        if path:
+        if path and client_supports_mcp(name, runner=runner):
             detected[name] = path
     return detected
 
@@ -359,9 +380,9 @@ def install_claude(api_key: str, *, force: bool, interactive: bool) -> str:
         "add",
         "-s",
         "user",
+        SERVER_NAME,
         "-e",
         f"{API_KEY_ENV_VAR}={api_key}",
-        SERVER_NAME,
         "--",
         *RUNTIME_COMMAND,
     ]

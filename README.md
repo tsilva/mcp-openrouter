@@ -33,7 +33,7 @@ mcp-openrouter is an MCP (Model Context Protocol) server that provides seamless 
 uvx mcp-openrouter install
 ```
 
-The installer auto-detects `codex`, `claude`, and `opencode` on your `PATH`, asks which detected clients should get the `openrouter` MCP server, stores your `OPENROUTER_API_KEY` in each selected client config, and registers the production runtime command `uvx mcp-openrouter`.
+The installer auto-detects `codex`, `claude`, and `opencode` on your `PATH`, verifies that each detected CLI actually supports MCP management, asks which eligible clients should get the `openrouter` MCP server, stores your `OPENROUTER_API_KEY` in each selected client config, and registers the production runtime command `uvx mcp-openrouter`.
 
 Requirements:
 
@@ -69,7 +69,7 @@ uvx mcp-openrouter install --yes --api-key sk-or-v1-...
 ### What gets installed
 
 - Codex: `codex mcp add openrouter --env OPENROUTER_API_KEY=... -- uvx mcp-openrouter`
-- Claude Code: `claude mcp add -s user -e OPENROUTER_API_KEY=... openrouter -- uvx mcp-openrouter`
+- Claude Code: `claude mcp add -s user openrouter -e OPENROUTER_API_KEY=... -- uvx mcp-openrouter`
 - opencode: writes `openrouter` under `~/.opencode/settings.json` in the `mcp` object
 
 If an existing `openrouter` config already matches, the installer skips it. If it differs, the interactive installer asks before replacing it, and `--force` replaces it automatically.
