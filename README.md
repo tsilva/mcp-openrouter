@@ -30,76 +30,66 @@ mcp-openrouter is an MCP (Model Context Protocol) server that provides seamless 
 ### Installation
 
 ```bash
-uv pip install mcp-openrouter
+uvx mcp-openrouter install
 ```
 
-Or run directly with uvx:
+The installer auto-detects `codex`, `claude`, and `opencode` on your `PATH`, asks which detected clients should get the `openrouter` MCP server, stores your `OPENROUTER_API_KEY` in each selected client config, and registers the production runtime command `uvx mcp-openrouter`.
+
+Requirements:
+
+- `uv` installed
+- an OpenRouter API key from [openrouter.ai/keys](https://openrouter.ai/keys)
+
+If `OPENROUTER_API_KEY` is already set in your shell, the installer reuses it. Otherwise it prompts securely.
+
+### Non-interactive install
+
+Install into all detected clients:
 
 ```bash
-uvx mcp-openrouter
+uvx mcp-openrouter install --yes
 ```
 
-The server reads `OPENROUTER_API_KEY` from your shell environment or a `.env` file in
-the current working directory.
-
-### Configuration
-
-#### Claude Code
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/tsilva/mcp-openrouter.git
-   cd mcp-openrouter
-   ```
-
-2. Create your `.env` file with your API key:
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your key from https://openrouter.ai/keys
-   ```
-
-3. Add the MCP server:
-   ```bash
-   claude mcp add openrouter --scope user -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
-   ```
-
-4. Restart Claude Code
-
-5. Verify installation:
-   ```bash
-   claude mcp list
-   # Should show: openrouter: ... - ✓ Connected
-   ```
-
-To uninstall:
+Install only specific clients:
 
 ```bash
-claude mcp remove openrouter --scope user
+uvx mcp-openrouter install --yes --clients codex,claude
 ```
 
-#### Claude Desktop
-
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "openrouter": {
-      "command": "uv",
-      "args": ["run", "mcp-openrouter"],
-      "cwd": "/path/to/mcp-openrouter"
-    }
-  }
-}
-```
-
-Then create a `.env` file in the `mcp-openrouter` directory with your API key:
+Replace existing `openrouter` configs automatically:
 
 ```bash
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
+uvx mcp-openrouter install --yes --force
 ```
 
-Get your API key at [openrouter.ai/keys](https://openrouter.ai/keys).
+```bash
+uvx mcp-openrouter install --yes --api-key sk-or-v1-...
+```
+
+### What gets installed
+
+- Codex: `codex mcp add openrouter --env OPENROUTER_API_KEY=... -- uvx mcp-openrouter`
+- Claude Code: `claude mcp add -s user -e OPENROUTER_API_KEY=... openrouter -- uvx mcp-openrouter`
+- opencode: writes `openrouter` under `~/.opencode/settings.json` in the `mcp` object
+
+If an existing `openrouter` config already matches, the installer skips it. If it differs, the interactive installer asks before replacing it, and `--force` replaces it automatically.
+
+### Uninstall
+
+```bash
+codex mcp remove openrouter
+claude mcp remove -s user openrouter
+```
+
+For opencode, remove the `openrouter` entry from `~/.opencode/settings.json` under `mcp`.
+
+### Running the server directly
+
+```bash
+uvx mcp-openrouter serve
+```
+
+`mcp-openrouter` with no arguments also starts the stdio MCP server.
 
 ### Default Models
 
@@ -233,6 +223,37 @@ OPENROUTER_API_KEY=your-key uv run pytest tests/
 # Lint
 uv run ruff check src/
 uv run ruff format src/
+```
+
+### Manual development install
+
+If you want your MCP client to run directly from a local checkout instead of the published PyPI package, register the repo path manually.
+
+Claude Code:
+
+```bash
+claude mcp add openrouter --scope user -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
+```
+
+Codex:
+
+```bash
+codex mcp add openrouter --env OPENROUTER_API_KEY=your-key -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
+```
+
+opencode:
+
+Add this `openrouter` entry under `mcp` in `~/.opencode/settings.json`:
+
+```json
+{
+  "type": "local",
+  "command": ["uv", "run", "--directory", "/path/to/mcp-openrouter", "mcp-openrouter"],
+  "environment": {
+    "OPENROUTER_API_KEY": "your-key"
+  },
+  "enabled": true
+}
 ```
 
 ### Applying Code Changes
