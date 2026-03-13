@@ -12,6 +12,7 @@ from mcp_openrouter.installer import (
     SERVER_NAME,
     InstallerError,
     choose_clients,
+    client_supports_mcp,
     codex_config_matches,
     desired_claude_config,
     desired_opencode_config,
@@ -32,13 +33,47 @@ class TestDetectClients:
                 "codex": "/usr/bin/codex",
                 "claude": None,
                 "opencode": "/usr/bin/opencode",
-            }.get(name)
+            }.get(name),
+            runner=lambda command: argparse.Namespace(returncode=0),
         )
 
         assert detected == {
             "codex": "/usr/bin/codex",
             "opencode": "/usr/bin/opencode",
         }
+
+    def test_skips_clients_without_mcp_support(self):
+        detected = detect_clients(
+            which=lambda name: {
+                "codex": "/usr/bin/codex",
+                "claude": "/usr/bin/claude",
+            }.get(name),
+            runner=lambda command: argparse.Namespace(
+                returncode=0 if command[0] == "codex" else 1
+            ),
+        )
+
+        assert detected == {"codex": "/usr/bin/codex"}
+
+
+class TestClientSupportProbe:
+    def test_reports_supported_client(self):
+        assert (
+            client_supports_mcp(
+                "claude",
+                runner=lambda command: argparse.Namespace(returncode=0),
+            )
+            is True
+        )
+
+    def test_reports_unsupported_client(self):
+        assert (
+            client_supports_mcp(
+                "claude",
+                runner=lambda command: argparse.Namespace(returncode=1),
+            )
+            is False
+        )
 
 
 class TestRequestedClients:
@@ -192,9 +227,9 @@ class TestClaudeInstaller:
             "add",
             "-s",
             "user",
+            SERVER_NAME,
             "-e",
             f"{API_KEY_ENV_VAR}=sk-key",
-            SERVER_NAME,
             "--",
             "uvx",
             "mcp-openrouter",
