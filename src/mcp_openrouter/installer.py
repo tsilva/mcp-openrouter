@@ -533,13 +533,11 @@ def run_install(args: argparse.Namespace) -> int:
         status = installer(api_key, force=args.force, interactive=interactive)
         print(f"{client}: {status}")
 
-    print("Manual uninstall commands:")
-    if "codex" in selected:
-        print("  codex mcp remove openrouter")
-    if "claude" in selected:
-        print("  claude mcp remove -s user openrouter")
-    if "opencode" in selected:
-        print("  Remove `openrouter` from ~/.opencode/settings.json under `mcp`.")
+    print("To uninstall later:")
+    print(
+        "  uvx mcp-openrouter uninstall --yes --clients "
+        + ",".join(selected)
+    )
     return 0
 
 
