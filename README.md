@@ -69,7 +69,7 @@ uvx mcp-openrouter install --yes --api-key sk-or-v1-...
 ### What gets installed
 
 - Codex: `codex mcp add openrouter --env OPENROUTER_API_KEY=... -- uvx mcp-openrouter`
-- Claude Code: `claude mcp add -s user -e OPENROUTER_API_KEY=... openrouter -- uvx mcp-openrouter`
+- Claude Code: `claude mcp add -s user openrouter -e OPENROUTER_API_KEY=... -- uvx mcp-openrouter`
 - opencode: writes `openrouter` under `~/.opencode/settings.json` in the `mcp` object
 
 If an existing `openrouter` config already matches, the installer skips it. If it differs, the interactive installer asks before replacing it, and `--force` replaces it automatically.

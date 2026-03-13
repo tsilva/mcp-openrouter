@@ -380,9 +380,9 @@ def install_claude(api_key: str, *, force: bool, interactive: bool) -> str:
         "add",
         "-s",
         "user",
+        SERVER_NAME,
         "-e",
         f"{API_KEY_ENV_VAR}={api_key}",
-        SERVER_NAME,
         "--",
         *RUNTIME_COMMAND,
     ]
