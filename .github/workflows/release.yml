@@ -10,12 +10,54 @@ concurrency:
   cancel-in-progress: false
 jobs:
   test:
-    uses: tsilva/.github/.github/workflows/test.yml@main
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          cache: true
+      - run: uv sync
+      - run: |
+          exit_code=0
+          uv run --with pytest pytest || exit_code=$?
+          if [ $exit_code -eq 5 ]; then
+            echo "No tests collected - skipping"
+            exit 0
+          fi
+          exit $exit_code
 
   publish:
     needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: pypi
     permissions:
       contents: write
       id-token: write
-    secrets: inherit
-    uses: tsilva/.github/.github/workflows/publish-pypi.yml@main
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check version
+        id: check-version
+        uses: tsilva/.github/.github/actions/check-version@main
+      - name: Setup uv
+        if: steps.check-version.outputs.tag_exists == 'false'
+        uses: astral-sh/setup-uv@v7
+        with:
+          cache: true
+      - name: Build package
+        if: steps.check-version.outputs.tag_exists == 'false'
+        run: uv build
+      - name: Create GitHub release
+        if: steps.check-version.outputs.tag_exists == 'false'
+        run: gh release create "${{ steps.check-version.outputs.tag }}" --title "${{ steps.check-version.outputs.tag }}" --generate-notes dist/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish to PyPI
+        if: steps.check-version.outputs.tag_exists == 'false'
+        uses: pypa/gh-action-pypi-publish@release/v1
