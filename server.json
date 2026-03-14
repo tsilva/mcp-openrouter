@@ -1,0 +1,65 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.tsilva/mcp-openrouter",
+  "title": "OpenRouter",
+  "description": "MCP server providing access to 300+ AI models via OpenRouter",
+  "repository": {
+    "url": "https://github.com/tsilva/mcp-openrouter",
+    "source": "github"
+  },
+  "version": "1.1.6",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "mcp-openrouter",
+      "version": "1.1.6",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "OPENROUTER_API_KEY",
+          "description": "OpenRouter API key used to authenticate tool requests.",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "DEFAULT_TEXT_MODEL",
+          "description": "Default model slug for chat tool calls when no model is provided.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "DEFAULT_IMAGE_MODEL",
+          "description": "Default model slug for image generation tool calls.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "DEFAULT_CODE_MODEL",
+          "description": "Default model slug for code-oriented tasks.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "DEFAULT_VISION_MODEL",
+          "description": "Default model slug for vision-capable tool calls.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "DEFAULT_EMBEDDING_MODEL",
+          "description": "Default model slug for embedding tool calls when no model is provided.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
