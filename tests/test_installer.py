@@ -2,6 +2,7 @@
 
 import argparse
 import json
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -17,6 +18,7 @@ from mcp_openrouter.installer import (
     desired_claude_config,
     desired_opencode_config,
     detect_clients,
+    detect_uninstallable_clients,
     install_claude,
     install_codex,
     install_opencode,
@@ -125,6 +127,18 @@ class TestCodexInstaller:
             }
         }
         assert codex_config_matches(config) is True
+
+    def test_codex_match_checks_api_key_when_value_is_available(self):
+        config = {
+            "transport": {
+                "type": "stdio",
+                "command": "uvx",
+                "args": ["mcp-openrouter"],
+                "env": {API_KEY_ENV_VAR: "sk-old"},
+                "env_vars": [],
+            }
+        }
+        assert codex_config_matches(config, "sk-new") is False
 
     def test_skips_replace_without_force_in_noninteractive_mode(self):
         existing = {
@@ -260,28 +274,43 @@ class TestClaudeInstaller:
             "mcp-openrouter",
         ]
 
-    def test_uninstall_removes_existing_config(self):
-        existing = desired_claude_config("sk-key")
-        with patch(
-            "mcp_openrouter.installer.get_existing_claude_server",
-            return_value=existing,
-        ), patch(
-            "mcp_openrouter.installer.run_command",
-            return_value=argparse.Namespace(returncode=0, stderr="", stdout=""),
-        ) as run_command:
-            status = uninstall_claude()
-
-        assert status == "uninstalled"
-        run_command.assert_called_once_with(
-            ["claude", "mcp", "remove", "-s", "user", SERVER_NAME]
+    def test_uninstall_removes_existing_config(self, tmp_path):
+        config_path = tmp_path / "claude.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "mcpServers": {
+                        SERVER_NAME: desired_claude_config("sk-key"),
+                        "other": desired_claude_config("sk-other"),
+                    }
+                }
+            )
         )
 
-    def test_uninstall_reports_not_installed(self):
-        with patch(
-            "mcp_openrouter.installer.get_existing_claude_server",
-            return_value=None,
-        ):
-            assert uninstall_claude() == "not installed"
+        status = uninstall_claude(config_path=config_path)
+
+        assert status == "uninstalled"
+        data = json.loads(config_path.read_text())
+        assert SERVER_NAME not in data["mcpServers"]
+        assert "other" in data["mcpServers"]
+
+    def test_uninstall_reports_not_installed(self, tmp_path):
+        config_path = tmp_path / "claude.json"
+        config_path.write_text(json.dumps({"mcpServers": {"other": {"type": "stdio"}}}))
+
+        assert uninstall_claude(config_path=config_path) == "not installed"
+
+    def test_uninstall_removes_empty_mcp_servers_key(self, tmp_path):
+        config_path = tmp_path / "claude.json"
+        config_path.write_text(
+            json.dumps({"mcpServers": {SERVER_NAME: desired_claude_config("sk-key")}})
+        )
+
+        status = uninstall_claude(config_path=config_path)
+
+        assert status == "uninstalled"
+        data = json.loads(config_path.read_text())
+        assert "mcpServers" not in data
 
 
 class TestOpencodeInstaller:
@@ -466,13 +495,36 @@ class TestRunInstall:
 
 
 class TestRunUninstall:
+    def test_detect_uninstallable_clients_includes_config_backed_entries(self):
+        with patch(
+            "mcp_openrouter.installer.detect_clients",
+            return_value={"codex": "/usr/bin/codex"},
+        ), patch(
+            "mcp_openrouter.installer.get_existing_claude_server",
+            return_value={"type": "stdio"},
+        ), patch(
+            "mcp_openrouter.installer.get_existing_opencode_server",
+            return_value=({}, {"type": "local"}, Path("/tmp/settings.json")),
+        ):
+            detected = detect_uninstallable_clients()
+
+        assert detected == {
+            "codex": "/usr/bin/codex",
+            "claude": "config",
+            "opencode": "config",
+        }
+
     def test_yes_uninstalls_all_selected_clients(self, monkeypatch):
         args = argparse.Namespace(yes=True, clients="codex,claude", command="uninstall")
         monkeypatch.setattr(
-            "mcp_openrouter.installer.detect_clients",
-            lambda: {"codex": "/usr/bin/codex", "claude": "/usr/bin/claude"},
+            "mcp_openrouter.installer.detect_uninstallable_clients",
+            lambda: {"codex": "/usr/bin/codex", "claude": "config"},
         )
-        monkeypatch.setitem(installer_module.UNINSTALLERS, "codex", lambda: "uninstalled")
+        monkeypatch.setitem(
+            installer_module.UNINSTALLERS,
+            "codex",
+            lambda: "uninstalled",
+        )
         monkeypatch.setitem(
             installer_module.UNINSTALLERS,
             "claude",
@@ -484,12 +536,28 @@ class TestRunUninstall:
     def test_no_selection_returns_zero(self, monkeypatch):
         args = argparse.Namespace(yes=False, clients=None, command="uninstall")
         monkeypatch.setattr(
-            "mcp_openrouter.installer.detect_clients",
+            "mcp_openrouter.installer.detect_uninstallable_clients",
             lambda: {"codex": "/usr/bin/codex"},
         )
         monkeypatch.setattr(
             "mcp_openrouter.installer.prompt_yes_no",
             lambda prompt, default=True: False,
+        )
+
+        assert run_uninstall(args) == 0
+
+    def test_requested_config_backed_client_can_uninstall_without_detection(
+        self, monkeypatch
+    ):
+        args = argparse.Namespace(yes=True, clients="opencode", command="uninstall")
+        monkeypatch.setattr(
+            "mcp_openrouter.installer.detect_uninstallable_clients",
+            lambda: {},
+        )
+        monkeypatch.setitem(
+            installer_module.UNINSTALLERS,
+            "opencode",
+            lambda: "uninstalled",
         )
 
         assert run_uninstall(args) == 0
