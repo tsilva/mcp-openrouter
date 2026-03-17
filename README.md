@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="mcp-openrouter" width="512">
+  <img src="https://raw.githubusercontent.com/tsilva/mcp-openrouter/main/logo.png" alt="mcp-openrouter" width="512">
 
   # mcp-openrouter
 
