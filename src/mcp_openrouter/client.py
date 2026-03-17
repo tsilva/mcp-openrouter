@@ -12,6 +12,8 @@ class OpenRouterClient:
     """Client for the OpenRouter API."""
 
     BASE_URL = "https://openrouter.ai/api/v1"
+    APP_URL = "https://github.com/tsilva/mcp-openrouter"
+    APP_TITLE = "mcp-openrouter"
 
     def __init__(self, api_key: str):
         """Initialize the client with an API key.
@@ -22,8 +24,8 @@ class OpenRouterClient:
         self.headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://claude.ai/claude-code",
-            "X-Title": "Claude Code MCP",
+            "HTTP-Referer": self.APP_URL,
+            "X-Title": self.APP_TITLE,
         }
 
     def _request(
