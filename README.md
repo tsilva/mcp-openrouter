@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="mcp-openrouter" width="512">
+  <img src="https://raw.githubusercontent.com/tsilva/mcp-openrouter/main/logo.png" alt="mcp-openrouter" width="512">
 
   # mcp-openrouter
 
@@ -233,13 +233,21 @@ uv sync --dev
 # Run the server
 OPENROUTER_API_KEY=your-key uv run mcp-openrouter
 
-# Run tests
+# Run unit tests
+uv run pytest tests/test_cli.py tests/test_client.py tests/test_config.py tests/test_installer.py tests/test_server.py
+
+# Run integration tests (requires a live OpenRouter API key)
+OPENROUTER_API_KEY=your-key uv run pytest tests/test_tools.py
+
+# Run the full suite
 OPENROUTER_API_KEY=your-key uv run pytest tests/
 
 # Lint
 uv run ruff check src/
 uv run ruff format src/
 ```
+
+The release workflow now requires the `OPENROUTER_API_KEY` GitHub secret so integration coverage runs before publishing.
 
 ### Manual development install
 

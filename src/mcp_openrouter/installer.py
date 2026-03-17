@@ -28,7 +28,9 @@ class InstallerError(RuntimeError):
     """Raised when installation cannot proceed."""
 
 
-def add_client_selection_arguments(parser: argparse.ArgumentParser, *, action: str) -> None:
+def add_client_selection_arguments(
+    parser: argparse.ArgumentParser, *, action: str
+) -> None:
     """Add shared client-selection arguments to a subparser."""
     parser.add_argument(
         "--yes",
@@ -255,24 +257,33 @@ def desired_opencode_config(api_key: str) -> dict[str, Any]:
     }
 
 
-def codex_config_matches(config: dict[str, Any]) -> bool:
+def codex_config_matches(config: dict[str, Any], api_key: str | None = None) -> bool:
     """Check whether an existing Codex config matches the desired install."""
     transport = dict(config.get("transport") or {})
-    env_names = set(transport.get("env_vars") or [])
     env = transport.get("env")
+    env_names = set(transport.get("env_vars") or [])
+    env_matches = API_KEY_ENV_VAR in env_names
+
     if isinstance(env, dict):
-        env_names.update(env.keys())
+        env_matches = API_KEY_ENV_VAR in env
+        if api_key is not None and env_matches:
+            env_matches = env.get(API_KEY_ENV_VAR) == api_key
 
     return (
         transport.get("type") == "stdio"
         and transport.get("command") == RUNTIME_COMMAND[0]
         and list(transport.get("args") or []) == [RUNTIME_COMMAND[1]]
-        and API_KEY_ENV_VAR in env_names
+        and env_matches
     )
 
 
 def get_existing_codex_server() -> dict[str, Any] | None:
     """Return the current Codex config for openrouter, if any."""
+    if not shutil.which("codex"):
+        raise InstallerError(
+            "Codex CLI not detected on PATH. Codex uninstall requires the Codex CLI."
+        )
+
     result = run_command(["codex", "mcp", "list", "--json"])
     if result.returncode != 0:
         message = result.stderr.strip() or result.stdout.strip()
@@ -341,7 +352,7 @@ def should_replace(
 def install_codex(api_key: str, *, force: bool, interactive: bool) -> str:
     """Install into Codex via its CLI."""
     existing = get_existing_codex_server()
-    if existing and codex_config_matches(existing):
+    if existing and codex_config_matches(existing, api_key):
         return "already configured"
 
     if existing and not should_replace("codex", force=force, interactive=interactive):
@@ -447,16 +458,21 @@ def uninstall_codex() -> str:
     return "uninstalled"
 
 
-def uninstall_claude() -> str:
+def uninstall_claude(config_path: Path | None = None) -> str:
     """Remove openrouter from Claude Code."""
-    existing = get_existing_claude_server()
-    if not existing:
+    path = config_path or (Path.home() / ".claude.json")
+    config = read_json_file(path)
+    servers = config.get("mcpServers")
+    if not isinstance(servers, dict) or SERVER_NAME not in servers:
         return "not installed"
 
-    result = run_command(["claude", "mcp", "remove", "-s", "user", SERVER_NAME])
-    if result.returncode != 0:
-        message = result.stderr.strip() or result.stdout.strip()
-        raise InstallerError(f"Failed to uninstall from Claude Code: {message}")
+    updated_servers = dict(servers)
+    updated_servers.pop(SERVER_NAME, None)
+    if updated_servers:
+        config["mcpServers"] = updated_servers
+    else:
+        config.pop("mcpServers", None)
+    write_json_atomic(path, config)
     return "uninstalled"
 
 
@@ -489,12 +505,41 @@ UNINSTALLERS = {
 }
 
 
-def resolve_target_clients(args: argparse.Namespace) -> tuple[list[str], list[str], bool]:
+def detect_uninstallable_clients(
+    which: Any = shutil.which,
+    *,
+    runner: Any | None = None,
+) -> dict[str, str]:
+    """Return clients that can be uninstalled via CLI or persisted config."""
+    detected = detect_clients(which, runner=runner)
+
+    if get_existing_claude_server() is not None:
+        detected.setdefault("claude", "config")
+
+    _, existing_opencode, _ = get_existing_opencode_server()
+    if existing_opencode is not None:
+        detected.setdefault("opencode", "config")
+
+    return detected
+
+
+def resolve_target_clients(
+    args: argparse.Namespace,
+) -> tuple[list[str], list[str], bool]:
     """Resolve detected, eligible, and selected clients for an operation."""
     command_name = getattr(args, "command", "install")
-    detected = detect_clients()
     requested = parse_requested_clients(args.clients)
-    clients = choose_clients(detected, requested)
+    interactive = not args.yes and requested is None
+
+    if command_name == "uninstall":
+        detected = detect_uninstallable_clients()
+        if requested is None:
+            clients = choose_clients(detected, requested)
+        else:
+            clients = requested
+    else:
+        detected = detect_clients()
+        clients = choose_clients(detected, requested)
 
     if not clients:
         raise InstallerError(
@@ -502,7 +547,6 @@ def resolve_target_clients(args: argparse.Namespace) -> tuple[list[str], list[st
             "Install Codex, Claude Code, or opencode first."
         )
 
-    interactive = not args.yes and requested is None
     selected: list[str] = []
     if requested is not None or args.yes:
         selected = clients

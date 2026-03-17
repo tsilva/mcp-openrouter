@@ -20,15 +20,20 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           cache: true
-      - run: uv sync
-      - run: |
-          exit_code=0
-          uv run --with pytest pytest || exit_code=$?
-          if [ $exit_code -eq 5 ]; then
-            echo "No tests collected - skipping"
-            exit 0
+      - run: uv sync --dev
+      - run: uv run ruff check src tests
+      - run: uv run pytest tests/test_cli.py tests/test_client.py tests/test_config.py tests/test_installer.py tests/test_server.py
+      - name: Require OpenRouter API key for integration tests
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          if [ -z "${OPENROUTER_API_KEY}" ]; then
+            echo "OPENROUTER_API_KEY secret is required for release validation"
+            exit 1
           fi
-          exit $exit_code
+      - env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: uv run pytest tests/test_tools.py
 
   publish:
     needs: [test]

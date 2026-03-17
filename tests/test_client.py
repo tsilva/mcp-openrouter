@@ -225,11 +225,13 @@ class TestListModels:
         mock_resp.json.return_value = {
             "data": [
                 {
-                    "slug": "a/b",
+                    "id": "a/b",
                     "name": "B",
                     "context_length": 4096,
-                    "input_modalities": ["text"],
-                    "output_modalities": ["text"],
+                    "architecture": {
+                        "input_modalities": ["text"],
+                        "output_modalities": ["text"],
+                    },
                     "supported_parameters": ["tools"],
                 },
             ]
@@ -240,20 +242,91 @@ class TestListModels:
         assert len(result) == 1
         assert result[0]["slug"] == "a/b"
 
+    def test_merges_public_api_modalities(self, client):
+        text_resp = MagicMock()
+        text_resp.status_code = 200
+        text_resp.json.return_value = {
+            "data": [
+                {
+                    "id": "a/text",
+                    "name": "Text",
+                    "context_length": 4096,
+                    "architecture": {
+                        "input_modalities": ["text"],
+                        "output_modalities": ["text"],
+                    },
+                    "pricing": {},
+                    "supported_parameters": [],
+                }
+            ]
+        }
+        image_resp = MagicMock()
+        image_resp.status_code = 200
+        image_resp.json.return_value = {
+            "data": [
+                {
+                    "id": "b/image",
+                    "name": "Image",
+                    "context_length": 8192,
+                    "architecture": {
+                        "input_modalities": ["text"],
+                        "output_modalities": ["image"],
+                    },
+                    "pricing": {},
+                    "supported_parameters": [],
+                }
+            ]
+        }
+        embed_resp = MagicMock()
+        embed_resp.status_code = 200
+        embed_resp.json.return_value = {
+            "data": [
+                {
+                    "id": "c/embed",
+                    "name": "Embed",
+                    "context_length": 1024,
+                    "architecture": {
+                        "input_modalities": ["text"],
+                        "output_modalities": ["embeddings"],
+                    },
+                    "pricing": {},
+                    "supported_parameters": [],
+                }
+            ]
+        }
+
+        with patch(
+            "requests.get",
+            side_effect=[text_resp, image_resp, embed_resp],
+        ) as mock_get:
+            result = client.list_models()
+
+        assert {item["slug"] for item in result} == {"a/text", "b/image", "c/embed"}
+        assert mock_get.call_args_list[1].kwargs["params"] == {
+            "output_modalities": "image"
+        }
+        assert mock_get.call_args_list[2].kwargs["params"] == {
+            "output_modalities": "embeddings"
+        }
+
     def test_filter_vision(self, client):
         models = [
             {
-                "slug": "a",
+                "id": "a",
                 "name": "A",
-                "input_modalities": ["image", "text"],
-                "output_modalities": ["text"],
+                "architecture": {
+                    "input_modalities": ["image", "text"],
+                    "output_modalities": ["text"],
+                },
                 "supported_parameters": [],
             },
             {
-                "slug": "b",
+                "id": "b",
                 "name": "B",
-                "input_modalities": ["text"],
-                "output_modalities": ["text"],
+                "architecture": {
+                    "input_modalities": ["text"],
+                    "output_modalities": ["text"],
+                },
                 "supported_parameters": [],
             },
         ]
@@ -269,17 +342,21 @@ class TestListModels:
     def test_filter_image_gen(self, client):
         models = [
             {
-                "slug": "a",
+                "id": "a",
                 "name": "A",
-                "input_modalities": ["text"],
-                "output_modalities": ["image"],
+                "architecture": {
+                    "input_modalities": ["text"],
+                    "output_modalities": ["image"],
+                },
                 "supported_parameters": [],
             },
             {
-                "slug": "b",
+                "id": "b",
                 "name": "B",
-                "input_modalities": ["text"],
-                "output_modalities": ["text"],
+                "architecture": {
+                    "input_modalities": ["text"],
+                    "output_modalities": ["text"],
+                },
                 "supported_parameters": [],
             },
         ]
@@ -368,17 +445,21 @@ class TestListModelsEmbeddingFilter:
     def test_filter_embedding(self, client):
         models = [
             {
-                "slug": "a/embed",
+                "id": "a/embed",
                 "name": "Embed",
-                "input_modalities": ["text"],
-                "output_modalities": ["embeddings"],
+                "architecture": {
+                    "input_modalities": ["text"],
+                    "output_modalities": ["embeddings"],
+                },
                 "supported_parameters": [],
             },
             {
-                "slug": "b/chat",
+                "id": "b/chat",
                 "name": "Chat",
-                "input_modalities": ["text"],
-                "output_modalities": ["text"],
+                "architecture": {
+                    "input_modalities": ["text"],
+                    "output_modalities": ["text"],
+                },
                 "supported_parameters": [],
             },
         ]

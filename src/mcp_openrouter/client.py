@@ -1,7 +1,4 @@
-"""OpenRouter API Client.
-
-Provides access to 300+ AI models including text completion and image generation.
-"""
+"""OpenRouter API client."""
 
 import base64
 import sys
@@ -30,7 +27,13 @@ class OpenRouterClient:
         }
 
     def _request(
-        self, method: str, endpoint: str, payload: dict = None, max_retries: int = 3
+        self,
+        method: str,
+        endpoint: str,
+        payload: dict | None = None,
+        *,
+        params: dict | None = None,
+        max_retries: int = 3,
     ):
         """Make API request with retry logic."""
         url = endpoint if endpoint.startswith("http") else f"{self.BASE_URL}/{endpoint}"
@@ -38,7 +41,12 @@ class OpenRouterClient:
         for attempt in range(max_retries):
             try:
                 if method == "GET":
-                    response = requests.get(url, headers=self.headers, timeout=120)
+                    response = requests.get(
+                        url,
+                        headers=self.headers,
+                        params=params,
+                        timeout=120,
+                    )
                 else:
                     response = requests.post(
                         url, headers=self.headers, json=payload, timeout=120
@@ -189,11 +197,77 @@ class OpenRouterClient:
 
         return images
 
+    @staticmethod
+    def _model_identifier(model: dict) -> str | None:
+        """Return the public identifier for a model."""
+        return model.get("id") or model.get("slug") or model.get("canonical_slug")
+
+    @staticmethod
+    def _input_modalities(model: dict) -> list[str]:
+        """Return normalized input modalities."""
+        architecture = model.get("architecture") or {}
+        return list(
+            model.get("input_modalities")
+            or architecture.get("input_modalities")
+            or []
+        )
+
+    @staticmethod
+    def _output_modalities(model: dict) -> list[str]:
+        """Return normalized output modalities."""
+        architecture = model.get("architecture") or {}
+        return list(
+            model.get("output_modalities")
+            or architecture.get("output_modalities")
+            or []
+        )
+
+    @classmethod
+    def _normalize_model(cls, model: dict) -> dict | None:
+        """Normalize model records from the public models API."""
+        slug = cls._model_identifier(model)
+        if not slug:
+            return None
+
+        return {
+            "slug": slug,
+            "name": model.get("name", slug),
+            "context_length": model.get("context_length"),
+            "pricing": dict(model.get("pricing") or {}),
+            "supported_parameters": list(model.get("supported_parameters") or []),
+            "input_modalities": cls._input_modalities(model),
+            "output_modalities": cls._output_modalities(model),
+        }
+
+    def _fetch_models(self, output_modality: str | None = None) -> list[dict]:
+        """Fetch and normalize models from the public OpenRouter API."""
+        params = {"output_modalities": output_modality} if output_modality else None
+        result = self._request("GET", "models", params=params)
+        models = result.get("data", [])
+        normalized: list[dict] = []
+        for model in models:
+            item = self._normalize_model(model)
+            if item is not None:
+                normalized.append(item)
+        return normalized
+
+    @staticmethod
+    def _filter_models(models: list[dict], capability: str | None) -> list[dict]:
+        """Filter normalized models by capability."""
+        if capability == "vision":
+            return [m for m in models if "image" in m.get("input_modalities", [])]
+        if capability == "image_gen":
+            return [m for m in models if "image" in m.get("output_modalities", [])]
+        if capability == "embedding":
+            return [m for m in models if "embeddings" in m.get("output_modalities", [])]
+        if capability == "tools":
+            return [m for m in models if "tools" in m.get("supported_parameters", [])]
+        if capability == "long_context":
+            return [m for m in models if m.get("context_length", 0) >= 100000]
+        return models
+
     def list_models(self, capability: str = None) -> list:
         """List available models, optionally filtered by capability.
-
-        Uses the frontend/models endpoint which includes all models (600+)
-        including image generation models.
 
         Args:
             capability: Filter by capability (vision, image_gen, tools, long_context)
@@ -201,28 +275,17 @@ class OpenRouterClient:
         Returns:
             List of model dicts with slug, name, context_length, pricing, etc.
         """
-        result = self._request("GET", "https://openrouter.ai/api/frontend/models")
-        models = result.get("data", [])
+        if capability == "image_gen":
+            return self._filter_models(self._fetch_models("image"), capability)
+        if capability == "embedding":
+            return self._filter_models(self._fetch_models("embeddings"), capability)
 
-        if capability:
-            if capability == "vision":
-                models = [m for m in models if "image" in m.get("input_modalities", [])]
-            elif capability == "image_gen":
-                models = [
-                    m for m in models if "image" in m.get("output_modalities", [])
-                ]
-            elif capability == "embedding":
-                models = [
-                    m for m in models if "embeddings" in m.get("output_modalities", [])
-                ]
-            elif capability == "tools":
-                models = [
-                    m for m in models if "tools" in m.get("supported_parameters", [])
-                ]
-            elif capability == "long_context":
-                models = [m for m in models if m.get("context_length", 0) >= 100000]
+        merged: dict[str, dict] = {}
+        for modality in (None, "image", "embeddings"):
+            for model in self._fetch_models(modality):
+                merged.setdefault(model["slug"], model)
 
-        return models
+        return self._filter_models(list(merged.values()), capability)
 
     def embeddings(self, model: str, input: str | list[str], **kwargs) -> dict:
         """Generate embeddings for text input.
