@@ -32,6 +32,14 @@ Supported MCP hosts:
 - Claude Code
 - opencode
 
+Tested host versions for this release:
+
+| Host | Version |
+|------|---------|
+| Codex | `codex-cli 0.114.0` |
+| Claude Code | `2.1.76` |
+| opencode | `1.2.27` |
+
 ## Features
 
 - ✨ **Text Completion** — Chat with any OpenRouter model (Claude, GPT, Gemini, Mistral, etc.)
@@ -272,7 +280,7 @@ uv sync --dev
 OPENROUTER_API_KEY=your-key uv run mcp-openrouter
 
 # Run unit tests
-uv run pytest tests/test_cli.py tests/test_client.py tests/test_config.py tests/test_installer.py tests/test_server.py
+uv run pytest tests/test_cli.py tests/test_client.py tests/test_config.py tests/test_installer.py tests/test_release_metadata.py tests/test_server.py
 
 # Run integration tests (requires a live OpenRouter API key)
 OPENROUTER_API_KEY=your-key uv run pytest tests/test_tools.py
@@ -359,6 +367,7 @@ For a production release:
 - Publish the Python package to PyPI as `mcp-openrouter`.
 - Keep [`server.json`](server.json) in sync with the released version so the official MCP Registry metadata points at the correct package version.
 - Preserve the `<!-- mcp-name: io.github.tsilva/mcp-openrouter -->` marker in this README so registry ownership verification continues to work.
+- Update [`CHANGELOG.md`](CHANGELOG.md) with a short curated entry for the release so GitHub releases ship with readable notes.
 
 ## Contributing
 

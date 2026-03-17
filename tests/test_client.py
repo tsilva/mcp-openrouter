@@ -18,8 +18,8 @@ class TestClientInit:
     def test_headers(self, client):
         assert client.headers["Authorization"] == "Bearer test-api-key"
         assert client.headers["Content-Type"] == "application/json"
-        assert "HTTP-Referer" in client.headers
-        assert "X-Title" in client.headers
+        assert client.headers["HTTP-Referer"] == "https://github.com/tsilva/mcp-openrouter"
+        assert client.headers["X-Title"] == "mcp-openrouter"
 
 
 class TestRequest:
