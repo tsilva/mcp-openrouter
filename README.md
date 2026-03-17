@@ -18,7 +18,19 @@
 
 mcp-openrouter is an MCP (Model Context Protocol) server that provides seamless access to OpenRouter's extensive catalog of AI models. Use Claude, GPT, Gemini, Llama, and 300+ other models through a unified interface.
 
-The repository includes a root `server.json` for publishing metadata to the official MCP Registry.
+The package is published on PyPI as [`mcp-openrouter`](https://pypi.org/project/mcp-openrouter/), and the repository includes a root `server.json` for publishing metadata to the official MCP Registry.
+
+## Requirements
+
+- Python 3.10+
+- [`uv`](https://docs.astral.sh/uv/) for `uvx` installs and local development
+- An OpenRouter API key from [openrouter.ai/keys](https://openrouter.ai/keys)
+
+Supported MCP hosts:
+
+- Codex
+- Claude Code
+- opencode
 
 ## Features
 
@@ -38,11 +50,6 @@ uvx mcp-openrouter install
 ```
 
 The installer auto-detects `codex`, `claude`, and `opencode` on your `PATH`, verifies that each detected CLI actually supports MCP management, asks which eligible clients should get the `openrouter` MCP server, stores your `OPENROUTER_API_KEY` in each selected client config, and registers the production runtime command `uvx mcp-openrouter`.
-
-Requirements:
-
-- `uv` installed
-- an OpenRouter API key from [openrouter.ai/keys](https://openrouter.ai/keys)
 
 If `OPENROUTER_API_KEY` is already set in your shell, the installer reuses it. Otherwise it prompts securely.
 
@@ -65,6 +72,8 @@ Replace existing `openrouter` configs automatically:
 ```bash
 uvx mcp-openrouter install --yes --force
 ```
+
+Provide the API key directly:
 
 ```bash
 uvx mcp-openrouter install --yes --api-key sk-or-v1-...
@@ -106,6 +115,22 @@ uvx mcp-openrouter serve
 ```
 
 `mcp-openrouter` with no arguments also starts the stdio MCP server.
+
+## Configuration
+
+Required environment variable:
+
+- `OPENROUTER_API_KEY`: OpenRouter API key used to authenticate requests
+
+Optional default model environment variables:
+
+- `DEFAULT_TEXT_MODEL`: Default model for `chat`
+- `DEFAULT_IMAGE_MODEL`: Default model for `generate_image`
+- `DEFAULT_EMBEDDING_MODEL`: Default model for `embed`
+- `DEFAULT_CODE_MODEL`: Reserved for code-oriented workflows and client defaults
+- `DEFAULT_VISION_MODEL`: Reserved for vision-oriented workflows and client defaults
+
+The server loads environment variables from `.env` in the current working directory and from a repository-root `.env` when running from a checkout.
 
 ### Default Models
 
@@ -168,11 +193,22 @@ Send a chat completion request to any OpenRouter model.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `prompt` | string | Yes | User message to send |
+| `messages` | array | No | Multi-turn conversation payload; provide `prompt` or `messages`, not both |
 | `model` | string | No* | Model identifier (e.g., `anthropic/claude-sonnet-4`) |
 | `system` | string | No | System prompt for context |
 | `max_tokens` | int | No | Maximum tokens in response |
 | `temperature` | float | No | Sampling temperature (0-2) |
+| `top_p` | float | No | Nucleus sampling threshold (0-1) |
+| `top_k` | int | No | Top-k sampling limit |
+| `frequency_penalty` | float | No | Penalize repeated tokens (-2 to 2) |
+| `presence_penalty` | float | No | Penalize tokens already present (-2 to 2) |
+| `seed` | int | No | Deterministic seed when the model/provider supports it |
+| `stop` | array | No | Stop sequences |
 | `json_mode` | bool | No | Request JSON-formatted response |
+| `response_format` | object | No | Explicit response format; overrides `json_mode` |
+| `reasoning_effort` | string | No | Reasoning effort hint: `minimal`, `medium`, or `high` |
+| `provider` | object | No | Provider routing preferences |
+| `assistant_prefill` | string | No | Prefill the assistant response |
 
 *Required unless `DEFAULT_TEXT_MODEL` is set.
 
@@ -183,11 +219,13 @@ Generate an image using an OpenRouter image model.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `prompt` | string | Yes | Image description |
-| `output_path` | string | Yes | Absolute path to save the image |
 | `model` | string | No* | Image model (e.g., `google/gemini-3-pro-image-preview`) |
 | `aspect_ratio` | string | No | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `21:9` |
 | `size` | string | No | `1K`, `2K`, or `4K` |
 | `background` | string | No | Background setting (e.g., `transparent`) |
+| `quality` | string | No | Quality setting such as `high`, `medium`, or `low` |
+| `output_format` | string | No | Output format such as `png`, `webp`, or `jpeg` |
+| `output_path` | string | No | Absolute path to save the generated image locally |
 
 *Required unless `DEFAULT_IMAGE_MODEL` is set.
 
@@ -291,6 +329,36 @@ When you modify the MCP server code, Claude won't automatically pick up the chan
 2. **Or use the `/mcp` command** — Check server status and restart options within Claude Code.
 
 **Why this works:** The installation uses `uv run --directory /path/to/mcp-openrouter` which executes code directly from your source directory. There's no separate "install" step needed — just restart the server process to load your changes.
+
+## Troubleshooting
+
+`OPENROUTER_API_KEY` not set:
+
+- Set `OPENROUTER_API_KEY` in your shell or `.env`, then restart the MCP host.
+
+`uvx mcp-openrouter install` fails because no clients are detected:
+
+- Make sure `codex`, `claude`, or `opencode` is installed and available on your `PATH`.
+
+Image generation fails with `output_path must be an absolute path`:
+
+- Pass an absolute path such as `/Users/you/output.png`.
+
+Tool calls fail with OpenRouter authentication or credit errors:
+
+- Verify the API key at [openrouter.ai/keys](https://openrouter.ai/keys) and confirm the account has available credits.
+
+Local code changes are not reflected in the MCP host:
+
+- Restart the host session so it launches a fresh server process.
+
+## Publishing
+
+For a production release:
+
+- Publish the Python package to PyPI as `mcp-openrouter`.
+- Keep [`server.json`](server.json) in sync with the released version so the official MCP Registry metadata points at the correct package version.
+- Preserve the `<!-- mcp-name: io.github.tsilva/mcp-openrouter -->` marker in this README so registry ownership verification continues to work.
 
 ## Contributing
 
