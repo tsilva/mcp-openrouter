@@ -44,6 +44,9 @@ Issues = "https://github.com/tsilva/mcp-openrouter/issues"
 [tool.hatch.build.targets.wheel]
 packages = ["src/mcp_openrouter"]
 
+[tool.hatch.build.targets.sdist]
+exclude = ["/nano-banana-2.png"]
+
 [tool.hatch.version]
 path = "src/mcp_openrouter/__init__.py"
 
