@@ -8,6 +8,12 @@ The format is based on Keep a Changelog, and versions are tracked from the publi
 
 - No unreleased changes yet.
 
+## [1.1.8] - 2026-04-28
+
+### Changed
+
+- Excluded the unused generated sample image from source distributions to keep release artifacts small.
+
 ## [1.1.7] - 2026-03-17
 
 ### Added
