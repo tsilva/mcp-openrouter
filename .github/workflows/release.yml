@@ -219,3 +219,29 @@ jobs:
       - name: Publish to PyPI
         if: steps.check-version.outputs.tag_exists == 'false'
         uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Wait for PyPI package availability
+        if: steps.check-version.outputs.tag_exists == 'false'
+        env:
+          RELEASE_VERSION: ${{ steps.check-version.outputs.version }}
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error "https://pypi.org/pypi/mcp-openrouter/${RELEASE_VERSION}/json" >/dev/null; then
+              echo "mcp-openrouter ${RELEASE_VERSION} is available on PyPI"
+              exit 0
+            fi
+            echo "Waiting for mcp-openrouter ${RELEASE_VERSION} on PyPI (${attempt}/30)"
+            sleep 10
+          done
+
+          echo "Timed out waiting for mcp-openrouter ${RELEASE_VERSION} on PyPI"
+          exit 1
+      - name: Install mcp-publisher
+        if: steps.check-version.outputs.tag_exists == 'false'
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+      - name: Authenticate to MCP Registry
+        if: steps.check-version.outputs.tag_exists == 'false'
+        run: ./mcp-publisher login github-oidc
+      - name: Publish to MCP Registry
+        if: steps.check-version.outputs.tag_exists == 'false'
+        run: ./mcp-publisher publish
