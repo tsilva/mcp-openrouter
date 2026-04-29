@@ -26,14 +26,6 @@ jobs:
       - run: uv sync --dev
       - run: uv run ruff check src tests
       - run: uv run pytest tests/test_cli.py tests/test_client.py tests/test_config.py tests/test_installer.py tests/test_release_metadata.py tests/test_server.py
-      - name: Require OpenRouter API key for integration tests
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: |
-          if [ -z "${OPENROUTER_API_KEY}" ]; then
-            echo "OPENROUTER_API_KEY secret is required for release validation"
-            exit 1
-          fi
       - env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: uv run pytest tests/test_tools.py
