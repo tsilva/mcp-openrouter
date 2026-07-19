@@ -56,3 +56,10 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
+
+[tool.uv]
+exclude-newer = "7 days"
+constraint-dependencies = [
+  "mistralai!=2.4.6",
+  "guardrails-ai!=0.10.1",
+]
