@@ -8,7 +8,7 @@
 
 `mcp-openrouter` is a Python MCP server that lets Codex, Claude Code, opencode, and other MCP hosts call OpenRouter models from local stdio tools.
 
-It exposes chat, image generation, embeddings, model listing, and model search through a small FastMCP server with `.env` support, retry handling, host-aware installation, and optional default model environment variables.
+It exposes chat, image generation, embeddings, model listing, and model search through a small FastMCP server with retry handling, host-aware installation, and optional default model environment variables.
 
 ## Install
 
@@ -24,19 +24,14 @@ Install into selected clients:
 uvx mcp-openrouter install --yes --clients codex,claude,opencode
 ```
 
-Pass the OpenRouter key directly for non-interactive setup:
-
-```bash
-uvx mcp-openrouter install --yes --api-key sk-or-v1-...
-```
-
 Run from a local checkout:
 
 ```bash
 git clone https://github.com/tsilva/mcp-openrouter.git
 cd mcp-openrouter
 uv sync --dev
-OPENROUTER_API_KEY=your-key uv run mcp-openrouter
+keyenv doctor
+keyenv run -- uv run mcp-openrouter
 ```
 
 `mcp-openrouter` with no arguments starts the stdio server. The explicit command is `uv run mcp-openrouter serve`.
@@ -49,7 +44,7 @@ uvx mcp-openrouter install --yes --force         # replace an existing openroute
 uvx mcp-openrouter uninstall --yes               # remove from detected MCP clients
 uv run mcp-openrouter                            # run the local stdio server
 uv run pytest tests/test_cli.py tests/test_client.py tests/test_config.py tests/test_installer.py tests/test_release_metadata.py tests/test_server.py
-OPENROUTER_API_KEY=your-key uv run pytest tests/test_tools.py
+keyenv run -- uv run pytest tests/test_tools.py
 uv run ruff check src/
 uv run ruff format src/
 ```
@@ -76,12 +71,11 @@ Use openrouter find_models to search for "claude"
 
 ## Configuration
 
-`OPENROUTER_API_KEY` is required for all tool calls. Set it in your shell, pass it during installation, or put it in `.env`.
+`OPENROUTER_API_KEY` is required for all tool calls. For a local checkout, its `.keyenv.toml` maps the variable to macOS Keychain: use `keyenv set OPENROUTER_API_KEY` to replace it, `keyenv doctor` to verify it, and `keyenv run -- ...` to launch the server or live tests. Python still reads the value normally from `os.environ`.
 
 Optional defaults make the `model` parameter optional for matching tools:
 
 ```bash
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
 DEFAULT_TEXT_MODEL=google/gemini-3-pro-image-preview
 DEFAULT_IMAGE_MODEL=google/gemini-3-pro-image-preview
 DEFAULT_CODE_MODEL=anthropic/claude-sonnet-4.5
@@ -89,7 +83,7 @@ DEFAULT_VISION_MODEL=google/gemini-3-pro-image-preview
 DEFAULT_EMBEDDING_MODEL=mistralai/mistral-embed-2312
 ```
 
-The current tools read `DEFAULT_TEXT_MODEL`, `DEFAULT_IMAGE_MODEL`, and `DEFAULT_EMBEDDING_MODEL`. `DEFAULT_CODE_MODEL` and `DEFAULT_VISION_MODEL` are available for client conventions. The server loads `.env` from the current working directory and from the repository root when running from a checkout.
+The current tools read `DEFAULT_TEXT_MODEL`, `DEFAULT_IMAGE_MODEL`, and `DEFAULT_EMBEDDING_MODEL`. `DEFAULT_CODE_MODEL` and `DEFAULT_VISION_MODEL` are available for client conventions. Non-secret defaults may remain in `.env`; the API key must not.
 
 ## Notes
 
@@ -108,13 +102,13 @@ Register a local checkout when you want an MCP host to run your working tree ins
 Claude Code:
 
 ```bash
-claude mcp add openrouter --scope user -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
+claude mcp add openrouter --scope user -- keyenv run --manifest /path/to/mcp-openrouter/.keyenv.toml -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
 ```
 
 Codex:
 
 ```bash
-codex mcp add openrouter --env OPENROUTER_API_KEY=your-key -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
+codex mcp add openrouter -- keyenv run --manifest /path/to/mcp-openrouter/.keyenv.toml -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
 ```
 
 opencode:
@@ -124,10 +118,7 @@ opencode:
   "mcp": {
     "openrouter": {
       "type": "local",
-      "command": ["uv", "run", "--directory", "/path/to/mcp-openrouter", "mcp-openrouter"],
-      "environment": {
-        "OPENROUTER_API_KEY": "your-key"
-      },
+      "command": ["keyenv", "run", "--manifest", "/path/to/mcp-openrouter/.keyenv.toml", "--", "uv", "run", "--directory", "/path/to/mcp-openrouter", "mcp-openrouter"],
       "enabled": true
     }
   }

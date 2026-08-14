@@ -15,13 +15,13 @@ uv sync --dev
 claude mcp add openrouter --scope user -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
 
 # Run the server (requires API key)
-OPENROUTER_API_KEY=your-key uv run mcp-openrouter
+keyenv run -- uv run mcp-openrouter
 
 # Run tests (requires API key for integration tests)
-OPENROUTER_API_KEY=your-key uv run pytest tests/
+keyenv run -- uv run pytest tests/
 
 # Run a single test
-OPENROUTER_API_KEY=your-key uv run pytest tests/test_tools.py::TestChatTool::test_chat_returns_string -v
+keyenv run -- uv run pytest tests/test_tools.py::TestChatTool::test_chat_returns_string -v
 
 # Lint with ruff
 uv run ruff check src/
@@ -30,7 +30,7 @@ uv run ruff format src/
 
 ## Configuration
 
-Environment variables (set in `.env` file or shell):
+Environment variables (private values declared in `.keyenv.toml` are injected with `keyenv run -- ...`; non-secret defaults may remain in `.env`):
 
 | Variable | Description |
 |----------|-------------|
