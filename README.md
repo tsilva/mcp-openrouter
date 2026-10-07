@@ -1,8 +1,10 @@
-<div align="center">
+<p align="center">
   <img src="./logo.png" alt="mcp-openrouter" width="360" />
-
-  **🚀 One MCP server for OpenRouter models 🚀**
-</div>
+  <br />
+  <!-- repo-tagline:start -->
+  <strong>🚀 One MCP server for OpenRouter models 🚀</strong>
+  <!-- repo-tagline:end -->
+</p>
 
 <!-- mcp-name: io.github.tsilva/mcp-openrouter -->
 
