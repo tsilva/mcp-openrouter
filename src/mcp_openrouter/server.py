@@ -45,7 +45,7 @@ Available tools:
 - list_models: List available models by capability
 - find_models: Search for models by name
 
-Requires OPENROUTER_API_KEY environment variable.""",
+All model calls use AgentBridge; its upstream credentials stay in the gateway.""",
 )
 
 
@@ -57,13 +57,7 @@ def _register_tool(fn, *, name: str):
 
 def get_client() -> OpenRouterClient:
     """Get an initialized OpenRouter client."""
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "OPENROUTER_API_KEY environment variable not set. "
-            "Get your key at: https://openrouter.ai/keys"
-        )
-    return OpenRouterClient(api_key)
+    return OpenRouterClient(os.environ.get("AGENTBRIDGE_API_KEY"))
 
 
 def _chat(

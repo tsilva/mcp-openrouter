@@ -14,14 +14,14 @@ uv sync --dev
 # Install MCP server for Claude Code
 claude mcp add openrouter --scope user -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
 
-# Run the server (requires API key)
-keyenv run -- uv run mcp-openrouter
+# Run the server (uses AgentBridge)
+uv run mcp-openrouter
 
-# Run tests (requires API key for integration tests)
-keyenv run -- uv run pytest tests/
+# Run tests (live gateway tests are opt-in)
+uv run pytest tests/
 
 # Run a single test
-keyenv run -- uv run pytest tests/test_tools.py::TestChatTool::test_chat_returns_string -v
+uv run pytest tests/test_tools.py::TestChatTool::test_chat_returns_string -v
 
 # Lint with ruff
 uv run ruff check src/
@@ -30,11 +30,11 @@ uv run ruff format src/
 
 ## Configuration
 
-Environment variables (private values declared in `.keyenv.toml` are injected with `keyenv run -- ...`; non-secret defaults may remain in `.env`):
+Environment variables (an optional gateway token is injected from Infisical; non-secret defaults may remain in `.env`):
 
 | Variable | Description |
 |----------|-------------|
-| `OPENROUTER_API_KEY` | **Required.** Your OpenRouter API key |
+| `AGENTBRIDGE_API_KEY` | Optional gateway access token |
 | `DEFAULT_TEXT_MODEL` | Default model for `chat` tool (e.g., `anthropic/claude-sonnet-4`) |
 | `DEFAULT_IMAGE_MODEL` | Default model for `generate_image` tool (e.g., `google/gemini-3-pro-image-preview`) |
 | `DEFAULT_CODE_MODEL` | Default model for code-related tasks |
@@ -52,12 +52,12 @@ This is an MCP (Model Context Protocol) server built with FastMCP that exposes O
 - `src/mcp_openrouter/client.py` - `OpenRouterClient` class handling API requests with retry logic
 - `src/mcp_openrouter/config.py` - Configuration management for default models
 
-**Flow:** MCP tools in `server.py` → `get_client()` → `OpenRouterClient` methods → OpenRouter API
+**Flow:** MCP tools in `server.py` → `get_client()` → `OpenRouterClient` methods → AgentBridge API
 
 **Entry point:** `mcp-openrouter` CLI command runs `server:main()` which starts the FastMCP server.
 
 ## Project Guidelines
 
 - README.md must be kept up to date with any significant project changes
-- Tests require `OPENROUTER_API_KEY` environment variable (tests are skipped if not set)
+- Live tests require `AGENTBRIDGE_LIVE_TESTS=1`; ordinary tests use mocked transport
 - Python 3.10+ required

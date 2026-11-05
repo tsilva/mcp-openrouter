@@ -32,8 +32,7 @@ Run from a local checkout:
 git clone https://github.com/tsilva/mcp-openrouter.git
 cd mcp-openrouter
 uv sync --dev
-keyenv doctor
-keyenv run -- uv run mcp-openrouter
+uv run mcp-openrouter
 ```
 
 `mcp-openrouter` with no arguments starts the stdio server. The explicit command is `uv run mcp-openrouter serve`.
@@ -46,7 +45,7 @@ uvx mcp-openrouter install --yes --force         # replace an existing openroute
 uvx mcp-openrouter uninstall --yes               # remove from detected MCP clients
 uv run mcp-openrouter                            # run the local stdio server
 uv run pytest tests/test_cli.py tests/test_client.py tests/test_config.py tests/test_installer.py tests/test_release_metadata.py tests/test_server.py
-keyenv run -- uv run pytest tests/test_tools.py
+uv run pytest tests/test_tools.py
 uv run ruff check src/
 uv run ruff format src/
 ```
@@ -73,7 +72,7 @@ Use openrouter find_models to search for "claude"
 
 ## Configuration
 
-`OPENROUTER_API_KEY` is required for all tool calls. For a local checkout, its `.keyenv.toml` maps the variable to macOS Keychain: use `keyenv set OPENROUTER_API_KEY` to replace it, `keyenv doctor` to verify it, and `keyenv run -- ...` to launch the server or live tests. Python still reads the value normally from `os.environ`.
+`AGENTBRIDGE_API_KEY` is optional when a gateway requires authentication. The local gateway needs no application key. For an authenticated gateway, inject the token from Infisical using `infisical run --projectId PROJECT_ID --env=prod -- uv run mcp-openrouter`. Python reads it from the process environment.
 
 Optional defaults make the `model` parameter optional for matching tools:
 
@@ -93,9 +92,9 @@ The current tools read `DEFAULT_TEXT_MODEL`, `DEFAULT_IMAGE_MODEL`, and `DEFAULT
 - The published runtime command installed into hosts is `uvx mcp-openrouter`.
 - Supported installer targets are Codex, Claude Code, and opencode.
 - `generate_image.output_path` must be absolute, for example `/Users/you/output.png`.
-- Unit tests mock network calls. `tests/test_tools.py` requires a live `OPENROUTER_API_KEY`.
+- Unit tests mock network calls. `tests/test_tools.py` requires a live `AGENTBRIDGE_API_KEY`.
 - After changing server code, restart the MCP host so it launches a fresh server process.
-- Keep `server.json`, `CHANGELOG.md`, and the package version in sync before release. The Makefile release helper is `make release-x.y.z`.
+- Keep `server.json` and the package version in sync before release. Release notes are generated on GitHub. The Makefile release helper is `make release-x.y.z`.
 
 ## Local MCP Development
 
@@ -104,13 +103,13 @@ Register a local checkout when you want an MCP host to run your working tree ins
 Claude Code:
 
 ```bash
-claude mcp add openrouter --scope user -- keyenv run --manifest /path/to/mcp-openrouter/.keyenv.toml -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
+claude mcp add openrouter --scope user -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
 ```
 
 Codex:
 
 ```bash
-codex mcp add openrouter -- keyenv run --manifest /path/to/mcp-openrouter/.keyenv.toml -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
+codex mcp add openrouter -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
 ```
 
 opencode:
@@ -120,7 +119,7 @@ opencode:
   "mcp": {
     "openrouter": {
       "type": "local",
-      "command": ["keyenv", "run", "--manifest", "/path/to/mcp-openrouter/.keyenv.toml", "--", "uv", "run", "--directory", "/path/to/mcp-openrouter", "mcp-openrouter"],
+      "command": ["uv", "run", "--directory", "/path/to/mcp-openrouter", "mcp-openrouter"],
       "enabled": true
     }
   }
@@ -130,6 +129,16 @@ opencode:
 ## Architecture
 
 ![mcp-openrouter architecture diagram](./architecture.png)
+
+## AgentBridge routing
+
+All model requests use AgentBridge as their sole endpoint. Set
+`AGENTBRIDGE_BASE_URL` to its API root (default
+`http://127.0.0.1:8082/api/v1`). `AGENTBRIDGE_API_KEY` is an optional gateway
+access token; upstream OpenRouter credentials are managed only by AgentBridge.
+Existing model choices are preserved and gain the gateway's `openrouter/`
+namespace on requests. Image generation and embeddings require the gateway
+application routes; there is no direct-provider fallback.
 
 ## License
 
