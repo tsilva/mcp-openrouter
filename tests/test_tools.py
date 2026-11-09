@@ -10,9 +10,9 @@ from mcp_openrouter.client import OpenRouterClient
 @pytest.fixture(scope="module", autouse=True)
 def require_openrouter_access():
     """Skip integration tests unless a working OpenRouter API key is available."""
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    if not api_key:
-        pytest.skip("OPENROUTER_API_KEY not set")
+    if os.environ.get("AGENTBRIDGE_LIVE_TESTS") != "1":
+        pytest.skip("AGENTBRIDGE_LIVE_TESTS=1 is required for live inference")
+    api_key = os.environ.get("AGENTBRIDGE_API_KEY")
 
     try:
         OpenRouterClient(api_key).chat_simple(

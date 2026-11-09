@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.tsilva/mcp-openrouter",
   "title": "OpenRouter",
-  "description": "MCP server providing access to 300+ AI models via OpenRouter",
+  "description": "MCP server accessing OpenRouter models through AgentBridge",
   "repository": {
     "url": "https://github.com/tsilva/mcp-openrouter",
     "source": "github"
@@ -18,9 +18,16 @@
       },
       "environmentVariables": [
         {
-          "name": "OPENROUTER_API_KEY",
-          "description": "OpenRouter API key used to authenticate tool requests.",
-          "isRequired": true,
+          "name": "AGENTBRIDGE_BASE_URL",
+          "description": "AgentBridge API root; defaults to http://127.0.0.1:8082/api/v1.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "AGENTBRIDGE_API_KEY",
+          "description": "Optional AgentBridge access token.",
+          "isRequired": false,
           "isSecret": true,
           "format": "string"
         },

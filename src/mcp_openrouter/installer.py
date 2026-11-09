@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import getpass
 import json
 import os
 import shutil
@@ -16,7 +15,7 @@ from typing import Any
 SERVER_NAME = "openrouter"
 SUPPORTED_CLIENTS = ("codex", "claude", "opencode")
 RUNTIME_COMMAND = ("uvx", "mcp-openrouter")
-API_KEY_ENV_VAR = "OPENROUTER_API_KEY"
+API_KEY_ENV_VAR = "AGENTBRIDGE_API_KEY"
 CLIENT_PROBE_COMMANDS = {
     "codex": ["codex", "mcp", "--help"],
     "claude": ["claude", "mcp", "--help"],
@@ -52,7 +51,7 @@ def add_install_subparser(subparsers: argparse._SubParsersAction) -> None:
     add_client_selection_arguments(parser, action="install into")
     parser.add_argument(
         "--api-key",
-        help="OpenRouter API key to persist into installed MCP configs",
+        help="Optional AgentBridge token to persist into installed MCP configs",
     )
     parser.add_argument(
         "--force",
@@ -146,21 +145,11 @@ def choose_clients(
 
 
 def resolve_api_key(explicit_api_key: str | None) -> str:
-    """Resolve the OpenRouter API key from args, env, or prompt."""
+    """Resolve optional gateway authentication without upstream-key prompts."""
     for value in (explicit_api_key, os.environ.get(API_KEY_ENV_VAR)):
         if value and value.strip():
             return value.strip()
-
-    if not sys.stdin.isatty():
-        raise InstallerError(
-            f"{API_KEY_ENV_VAR} is not set. "
-            "Pass --api-key or set it in the environment."
-        )
-
-    api_key = getpass.getpass("OpenRouter API key: ").strip()
-    if not api_key:
-        raise InstallerError("OpenRouter API key cannot be empty.")
-    return api_key
+    return "not-needed"
 
 
 def prompt_yes_no(prompt: str, *, default: bool = True) -> bool:
@@ -578,10 +567,7 @@ def run_install(args: argparse.Namespace) -> int:
         print(f"{client}: {status}")
 
     print("To uninstall later:")
-    print(
-        "  uvx mcp-openrouter uninstall --yes --clients "
-        + ",".join(selected)
-    )
+    print("  uvx mcp-openrouter uninstall --yes --clients " + ",".join(selected))
     return 0
 
 

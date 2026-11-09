@@ -6,7 +6,6 @@ on:
       - src/mcp_openrouter/__init__.py
       - server.json
       - pyproject.toml
-      - CHANGELOG.md
       - .github/workflows/release.yml
 concurrency:
   group: release
@@ -25,14 +24,14 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           cache: true
       - run: uv sync --dev
       - run: uv run ruff check src tests
       - run: uv run pytest tests/test_cli.py tests/test_client.py tests/test_config.py tests/test_installer.py tests/test_release_metadata.py tests/test_server.py
       - env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          AGENTBRIDGE_API_KEY: ${{ secrets.AGENTBRIDGE_API_KEY }}
         run: uv run pytest tests/test_tools.py
 
   build:
@@ -93,7 +92,7 @@ jobs:
           fi
       - name: Setup uv
         if: steps.check-version.outputs.tag_exists == 'false'
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           cache: true
       - name: Validate release metadata
@@ -190,27 +189,13 @@ jobs:
                   proc.kill()
                   proc.wait(timeout=5)
           PY
-      - name: Render release notes
+      - name: Generate release notes from committed changes
         if: steps.check-version.outputs.tag_exists == 'false'
         env:
           RELEASE_VERSION: ${{ steps.check-version.outputs.version }}
         run: |
-          python - <<'PY'
-          import os
-          import re
-          from pathlib import Path
-
-          version = os.environ["RELEASE_VERSION"]
-          changelog = Path("CHANGELOG.md").read_text()
-          pattern = re.compile(
-              rf"^## \[{re.escape(version)}\].*?(?=^## \[|\Z)",
-              re.MULTILINE | re.DOTALL,
-          )
-          match = pattern.search(changelog)
-          if not match:
-              raise SystemExit(f"Could not find CHANGELOG entry for {version}")
-          Path("/tmp/release-notes.md").write_text(match.group(0).strip() + "\n")
-          PY
+          python scripts/release_notes.py --version "$RELEASE_VERSION" \
+            --ref "$GITHUB_SHA" > /tmp/release-notes.md
       - name: Assemble release bundle
         if: steps.check-version.outputs.tag_exists == 'false'
         run: |

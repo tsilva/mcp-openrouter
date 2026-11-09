@@ -103,17 +103,10 @@ class TestResolveApiKey:
         monkeypatch.setenv(API_KEY_ENV_VAR, "sk-env")
         assert resolve_api_key(None) == "sk-env"
 
-    def test_prompts_when_missing(self, monkeypatch):
+    def test_no_token_is_needed_and_upstream_key_is_ignored(self, monkeypatch):
         monkeypatch.delenv(API_KEY_ENV_VAR, raising=False)
-        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
-        with patch("getpass.getpass", return_value="sk-prompt"):
-            assert resolve_api_key(None) == "sk-prompt"
-
-    def test_errors_without_tty(self, monkeypatch):
-        monkeypatch.delenv(API_KEY_ENV_VAR, raising=False)
-        monkeypatch.setattr("sys.stdin.isatty", lambda: False)
-        with pytest.raises(InstallerError, match=API_KEY_ENV_VAR):
-            resolve_api_key(None)
+        monkeypatch.setenv("OPENROUTER_API_KEY", "upstream-only")
+        assert resolve_api_key(None) == "not-needed"
 
 
 class TestCodexInstaller:
@@ -149,10 +142,13 @@ class TestCodexInstaller:
                 "env_vars": [],
             }
         }
-        with patch(
-            "mcp_openrouter.installer.get_existing_codex_server",
-            return_value=existing,
-        ), patch("mcp_openrouter.installer.run_command") as run_command:
+        with (
+            patch(
+                "mcp_openrouter.installer.get_existing_codex_server",
+                return_value=existing,
+            ),
+            patch("mcp_openrouter.installer.run_command") as run_command,
+        ):
             status = install_codex("sk-key", force=False, interactive=False)
 
         assert status == "skipped"
@@ -167,16 +163,19 @@ class TestCodexInstaller:
                 "env_vars": [],
             }
         }
-        with patch(
-            "mcp_openrouter.installer.get_existing_codex_server",
-            return_value=existing,
-        ), patch(
-            "mcp_openrouter.installer.run_command",
-            side_effect=[
-                argparse.Namespace(returncode=0, stderr="", stdout=""),
-                argparse.Namespace(returncode=0, stderr="", stdout=""),
-            ],
-        ) as run_command:
+        with (
+            patch(
+                "mcp_openrouter.installer.get_existing_codex_server",
+                return_value=existing,
+            ),
+            patch(
+                "mcp_openrouter.installer.run_command",
+                side_effect=[
+                    argparse.Namespace(returncode=0, stderr="", stdout=""),
+                    argparse.Namespace(returncode=0, stderr="", stdout=""),
+                ],
+            ) as run_command,
+        ):
             status = install_codex("sk-key", force=True, interactive=False)
 
         assert status == "installed"
@@ -200,13 +199,16 @@ class TestCodexInstaller:
 
     def test_uninstall_removes_existing_config(self):
         existing = {"name": SERVER_NAME}
-        with patch(
-            "mcp_openrouter.installer.get_existing_codex_server",
-            return_value=existing,
-        ), patch(
-            "mcp_openrouter.installer.run_command",
-            return_value=argparse.Namespace(returncode=0, stderr="", stdout=""),
-        ) as run_command:
+        with (
+            patch(
+                "mcp_openrouter.installer.get_existing_codex_server",
+                return_value=existing,
+            ),
+            patch(
+                "mcp_openrouter.installer.run_command",
+                return_value=argparse.Namespace(returncode=0, stderr="", stdout=""),
+            ) as run_command,
+        ):
             status = uninstall_codex()
 
         assert status == "uninstalled"
@@ -223,10 +225,13 @@ class TestCodexInstaller:
 class TestClaudeInstaller:
     def test_skips_when_already_configured(self):
         existing = desired_claude_config("sk-key")
-        with patch(
-            "mcp_openrouter.installer.get_existing_claude_server",
-            return_value=existing,
-        ), patch("mcp_openrouter.installer.run_command") as run_command:
+        with (
+            patch(
+                "mcp_openrouter.installer.get_existing_claude_server",
+                return_value=existing,
+            ),
+            patch("mcp_openrouter.installer.run_command") as run_command,
+        ):
             status = install_claude("sk-key", force=False, interactive=False)
 
         assert status == "already configured"
@@ -239,16 +244,19 @@ class TestClaudeInstaller:
             "args": ["run", "mcp-openrouter"],
             "env": {},
         }
-        with patch(
-            "mcp_openrouter.installer.get_existing_claude_server",
-            return_value=existing,
-        ), patch(
-            "mcp_openrouter.installer.run_command",
-            side_effect=[
-                argparse.Namespace(returncode=0, stderr="", stdout=""),
-                argparse.Namespace(returncode=0, stderr="", stdout=""),
-            ],
-        ) as run_command:
+        with (
+            patch(
+                "mcp_openrouter.installer.get_existing_claude_server",
+                return_value=existing,
+            ),
+            patch(
+                "mcp_openrouter.installer.run_command",
+                side_effect=[
+                    argparse.Namespace(returncode=0, stderr="", stdout=""),
+                    argparse.Namespace(returncode=0, stderr="", stdout=""),
+                ],
+            ) as run_command,
+        ):
             status = install_claude("sk-key", force=True, interactive=False)
 
         assert status == "installed"
@@ -489,22 +497,25 @@ class TestRunInstall:
         captured = capsys.readouterr()
         assert "To uninstall later:" in captured.out
         assert (
-            "uvx mcp-openrouter uninstall --yes --clients codex,claude"
-            in captured.out
+            "uvx mcp-openrouter uninstall --yes --clients codex,claude" in captured.out
         )
 
 
 class TestRunUninstall:
     def test_detect_uninstallable_clients_includes_config_backed_entries(self):
-        with patch(
-            "mcp_openrouter.installer.detect_clients",
-            return_value={"codex": "/usr/bin/codex"},
-        ), patch(
-            "mcp_openrouter.installer.get_existing_claude_server",
-            return_value={"type": "stdio"},
-        ), patch(
-            "mcp_openrouter.installer.get_existing_opencode_server",
-            return_value=({}, {"type": "local"}, Path("/tmp/settings.json")),
+        with (
+            patch(
+                "mcp_openrouter.installer.detect_clients",
+                return_value={"codex": "/usr/bin/codex"},
+            ),
+            patch(
+                "mcp_openrouter.installer.get_existing_claude_server",
+                return_value={"type": "stdio"},
+            ),
+            patch(
+                "mcp_openrouter.installer.get_existing_opencode_server",
+                return_value=({}, {"type": "local"}, Path("/tmp/settings.json")),
+            ),
         ):
             detected = detect_uninstallable_clients()
 

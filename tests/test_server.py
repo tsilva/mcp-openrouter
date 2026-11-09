@@ -26,9 +26,7 @@ def _make_image_response(fmt="png", data=b"fake"):
         "choices": [
             {
                 "message": {
-                    "images": [
-                        {"image_url": {"url": f"data:image/{fmt};base64,{b64}"}}
-                    ]
+                    "images": [{"image_url": {"url": f"data:image/{fmt};base64,{b64}"}}]
                 }
             }
         ]
@@ -36,10 +34,11 @@ def _make_image_response(fmt="png", data=b"fake"):
 
 
 class TestGetClient:
-    def test_raises_without_api_key(self):
+    def test_uses_gateway_without_upstream_key(self):
         with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError, match="OPENROUTER_API_KEY"):
-                get_client()
+            client = get_client()
+            assert client.BASE_URL == "http://127.0.0.1:8082/api/v1"
+            assert client.headers["Authorization"] == "Bearer not-needed"
 
 
 class TestChatTool:
@@ -180,8 +179,7 @@ class TestGenerateImageTool:
         client.generate_image.return_value = [
             {
                 "image_url": {
-                    "url": "data:image/png;base64,"
-                    + base64.b64encode(b"x").decode()
+                    "url": "data:image/png;base64," + base64.b64encode(b"x").decode()
                 }
             }
         ]
@@ -202,6 +200,7 @@ class TestGenerateImageTool:
         result = generate_image(prompt="a cat", model="m/x")
         # Image is a fastmcp type; verify it was created (it's an Image instance)
         from fastmcp.utilities.types import Image as ImageType
+
         assert isinstance(result, ImageType)
 
     @patch("mcp_openrouter.server.get_client")

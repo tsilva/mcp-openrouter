@@ -18,7 +18,9 @@ class TestClientInit:
     def test_headers(self, client):
         assert client.headers["Authorization"] == "Bearer test-api-key"
         assert client.headers["Content-Type"] == "application/json"
-        assert client.headers["HTTP-Referer"] == "https://github.com/tsilva/mcp-openrouter"
+        assert (
+            client.headers["HTTP-Referer"] == "https://github.com/tsilva/mcp-openrouter"
+        )
         assert client.headers["X-Title"] == "mcp-openrouter"
 
 
@@ -49,8 +51,10 @@ class TestRequest:
         ok_resp.status_code = 200
         ok_resp.json.return_value = {"ok": True}
 
-        with patch("requests.post", side_effect=[fail_resp, ok_resp]), \
-             patch("time.sleep"):
+        with (
+            patch("requests.post", side_effect=[fail_resp, ok_resp]),
+            patch("time.sleep"),
+        ):
             result = client._request("POST", "endpoint", {}, max_retries=2)
         assert result == {"ok": True}
 
@@ -92,8 +96,7 @@ class TestRequest:
         resp.status_code = 429
         resp.json.return_value = {"error": {"code": 429, "message": "rate limited"}}
 
-        with patch("requests.post", return_value=resp), \
-             patch("time.sleep"):
+        with patch("requests.post", return_value=resp), patch("time.sleep"):
             with pytest.raises(Exception, match="429"):
                 client._request("POST", "endpoint", {}, max_retries=3)
 
@@ -111,7 +114,7 @@ class TestChat:
                 temperature=0.5,
             )
             payload = mock_post.call_args[1]["json"]
-            assert payload["model"] == "model/x"
+            assert payload["model"] == "openrouter/model/x"
             assert payload["messages"] == [{"role": "user", "content": "hello"}]
             assert payload["temperature"] == 0.5
 
@@ -165,7 +168,7 @@ class TestGenerateImage:
                 output_format="png",
             )
             payload = mock_post.call_args[1]["json"]
-            assert payload["model"] == "model/x"
+            assert payload["model"] == "openrouter/model/x"
             assert payload["modalities"] == ["image", "text"]
             assert payload["background"] == "transparent"
             assert payload["quality"] == "high"
@@ -408,7 +411,7 @@ class TestEmbeddings:
         with patch("requests.post", return_value=mock_resp) as mock_post:
             result = client.embeddings("mistralai/mistral-embed-2312", "hello")
             payload = mock_post.call_args[1]["json"]
-            assert payload["model"] == "mistralai/mistral-embed-2312"
+            assert payload["model"] == "openrouter/mistralai/mistral-embed-2312"
             assert payload["input"] == "hello"
             assert result["data"][0]["embedding"] == [0.1, 0.2]
 

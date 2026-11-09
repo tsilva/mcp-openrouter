@@ -1,26 +1,31 @@
 """OpenRouter API client."""
 
 import base64
+import os
 import sys
 import time
 from pathlib import Path
 
 import requests
 
+from .agentbridge import base_url, model_id
+
 
 class OpenRouterClient:
     """Client for the OpenRouter API."""
 
-    BASE_URL = "https://openrouter.ai/api/v1"
+    BASE_URL = "http://127.0.0.1:8082/api/v1"
     APP_URL = "https://github.com/tsilva/mcp-openrouter"
     APP_TITLE = "mcp-openrouter"
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str | None = None):
         """Initialize the client with an API key.
 
         Args:
-            api_key: OpenRouter API key from https://openrouter.ai/keys
+            api_key: Optional AgentBridge access token
         """
+        self.BASE_URL = base_url()
+        api_key = api_key or os.getenv("AGENTBRIDGE_API_KEY") or "not-needed"
         self.headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -38,7 +43,12 @@ class OpenRouterClient:
         max_retries: int = 3,
     ):
         """Make API request with retry logic."""
-        url = endpoint if endpoint.startswith("http") else f"{self.BASE_URL}/{endpoint}"
+        if endpoint.startswith(("http://", "https://")):
+            raise ValueError("AgentBridge requests must use relative API routes")
+        route = f"openrouter/{endpoint}" if method == "GET" else endpoint
+        url = f"{self.BASE_URL}/{route}"
+        if payload is not None and "model" in payload:
+            payload = {**payload, "model": model_id(payload["model"])}
 
         for attempt in range(max_retries):
             try:
@@ -72,8 +82,8 @@ class OpenRouterClient:
                 # Non-retryable errors
                 error_messages = {
                     400: "Bad request - check parameters",
-                    401: "Invalid API key - check OPENROUTER_API_KEY",
-                    402: "Insufficient credits - add funds at openrouter.ai",
+                    401: "Gateway authentication failed - check AGENTBRIDGE_API_KEY",
+                    402: "AgentBridge upstream account has insufficient credits",
                     403: "Content flagged by moderation",
                     429: "Rate limited - wait before retrying",
                 }
@@ -209,9 +219,7 @@ class OpenRouterClient:
         """Return normalized input modalities."""
         architecture = model.get("architecture") or {}
         return list(
-            model.get("input_modalities")
-            or architecture.get("input_modalities")
-            or []
+            model.get("input_modalities") or architecture.get("input_modalities") or []
         )
 
     @staticmethod
