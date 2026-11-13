@@ -30,7 +30,7 @@ uv run ruff format src/
 
 ## Configuration
 
-Environment variables (an optional gateway token is injected from Infisical; non-secret defaults may remain in `.env`):
+Environment variables:
 
 | Variable | Description |
 |----------|-------------|

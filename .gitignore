@@ -72,3 +72,5 @@ sdist/
 uv.lock
 var/
 wheels/
+
+/.internal/

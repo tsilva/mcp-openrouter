@@ -72,7 +72,11 @@ Use openrouter find_models to search for "claude"
 
 ## Configuration
 
-`AGENTBRIDGE_API_KEY` is optional when a gateway requires authentication. The local gateway needs no application key. For an authenticated gateway, inject the token from Infisical using `infisical run --projectId PROJECT_ID --env=prod -- uv run mcp-openrouter`. Python reads it from the process environment.
+The local gateway needs no application key; upstream credentials stay with
+the gateway. The installer rejects
+real gateway tokens from `--api-key` or `AGENTBRIDGE_API_KEY` before changing host
+configuration; it persists only a non-secret marker. Authenticated remote gateways
+need a separately reviewed proxy profile.
 
 Optional defaults make the `model` parameter optional for matching tools:
 
@@ -92,7 +96,7 @@ The current tools read `DEFAULT_TEXT_MODEL`, `DEFAULT_IMAGE_MODEL`, and `DEFAULT
 - The published runtime command installed into hosts is `uvx mcp-openrouter`.
 - Supported installer targets are Codex, Claude Code, and opencode.
 - `generate_image.output_path` must be absolute, for example `/Users/you/output.png`.
-- Unit tests mock network calls. `tests/test_tools.py` requires a live `AGENTBRIDGE_API_KEY`.
+- Unit tests mock network calls. Live tool tests are opt-in and require a separately authorized proxy session and request content.
 - After changing server code, restart the MCP host so it launches a fresh server process.
 - Keep `server.json` and the package version in sync before release. Release notes are generated on GitHub. The Makefile release helper is `make release-x.y.z`.
 

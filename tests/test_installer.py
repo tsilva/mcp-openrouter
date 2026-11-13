@@ -96,12 +96,18 @@ class TestRequestedClients:
 
 
 class TestResolveApiKey:
-    def test_prefers_explicit_api_key(self):
-        assert resolve_api_key("sk-test") == "sk-test"
+    def test_rejects_explicit_credentials(self):
+        with pytest.raises(InstallerError, match="Credential persistence is disabled"):
+            resolve_api_key("sk-test")
 
-    def test_uses_environment(self, monkeypatch):
+    def test_rejects_environment_credentials(self, monkeypatch):
         monkeypatch.setenv(API_KEY_ENV_VAR, "sk-env")
-        assert resolve_api_key(None) == "sk-env"
+        with pytest.raises(InstallerError, match="Credential persistence is disabled"):
+            resolve_api_key(None)
+
+    def test_accepts_only_non_secret_markers(self, monkeypatch):
+        monkeypatch.setenv(API_KEY_ENV_VAR, "agentbridge_public_placeholder")
+        assert resolve_api_key("not-needed") == "not-needed"
 
     def test_no_token_is_needed_and_upstream_key_is_ignored(self, monkeypatch):
         monkeypatch.delenv(API_KEY_ENV_VAR, raising=False)
@@ -442,7 +448,7 @@ class TestRunInstall:
         args = argparse.Namespace(
             yes=True,
             clients="codex,claude",
-            api_key="sk-key",
+            api_key="not-needed",
             force=False,
         )
         monkeypatch.setattr(
@@ -470,7 +476,7 @@ class TestRunInstall:
         args = argparse.Namespace(
             yes=True,
             clients="codex,claude",
-            api_key="sk-key",
+            api_key="not-needed",
             force=False,
         )
         monkeypatch.setattr(

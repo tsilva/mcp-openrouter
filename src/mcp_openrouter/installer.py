@@ -51,7 +51,7 @@ def add_install_subparser(subparsers: argparse._SubParsersAction) -> None:
     add_client_selection_arguments(parser, action="install into")
     parser.add_argument(
         "--api-key",
-        help="Optional AgentBridge token to persist into installed MCP configs",
+        help="Accepts only non-secret markers; use a reviewed proxy for authentication",
     )
     parser.add_argument(
         "--force",
@@ -145,10 +145,16 @@ def choose_clients(
 
 
 def resolve_api_key(explicit_api_key: str | None) -> str:
-    """Resolve optional gateway authentication without upstream-key prompts."""
+    """Reject credential persistence before inspecting or changing host configs."""
     for value in (explicit_api_key, os.environ.get(API_KEY_ENV_VAR)):
-        if value and value.strip():
-            return value.strip()
+        if value and value.strip() not in {
+            "not-needed",
+            "agentbridge_public_placeholder",
+        }:
+            raise InstallerError(
+                "Credential persistence is disabled. Use a reviewed proxy launcher; "
+                "the installer accepts only non-secret markers."
+            )
     return "not-needed"
 
 
