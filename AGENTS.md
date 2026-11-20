@@ -4,6 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+For agent-operated MCP access, launch the `agentbridge` profile from the root
+`.runbox.yaml` as the host command. Keep the server's standalone command
+available for operator use.
+
 ```bash
 # Install dependencies (uses uv)
 uv sync
@@ -11,10 +15,7 @@ uv sync
 # Install with dev dependencies
 uv sync --dev
 
-# Install MCP server for Claude Code
-claude mcp add openrouter --scope user -- uv run --directory /path/to/mcp-openrouter mcp-openrouter
-
-# Run the server (uses AgentBridge)
+# Run the standalone server (uses AgentBridge)
 uv run mcp-openrouter
 
 # Run tests (live gateway tests are opt-in)
